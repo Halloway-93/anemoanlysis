@@ -23,12 +23,48 @@ from functions.utils import *
 from ANEMO.ANEMO import ANEMO, read_edf
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+import os
+from pathlib import Path
+import re
 
+def get_subjects_and_sessions(base_path):
+    """
+    Scans directory structure to get ordered subject and session information.
+    
+    Args:
+        base_path (str): Base directory path containing subject folders
+        
+    Returns:
+        dict: Dictionary with subjects as keys and list of sessions as values
+    """
+    base_dir = Path(base_path)
+    subject_pattern = re.compile(r'sub-(\d+)')
+    session_pattern = re.compile(r'session-(\d+)')
+    
+    # Get and sort subjects
+    subjects = {}
+    for item in base_dir.iterdir():
+        if item.is_dir():
+            subject_match = subject_pattern.match(item.name)
+            if subject_match:
+                subject_num = int(subject_match.group(1))
+                # Get sessions for this subject
+                sessions = []
+                for session_dir in item.iterdir():
+                    if session_dir.is_dir():
+                        session_match = session_pattern.match(session_dir.name)
+                        if session_match:
+                            sessions.append(int(session_match.group(1)))
+                if sessions:
+                    subjects[subject_num] = sorted(sessions)
+    
+    return dict(sorted(subjects.items()))
+
+# Example usage:
 print("Current working directory:", os.getcwd())
 print("Contents of current directory:", os.listdir())
 
-main_dir = "/Users/mango/oueld.h/contextuaLearning/ColorCue/data"
-main_dir = "/Users/mango/oueld.h/attentionalTask/data/"
+main_dir = "/Users/mango/oueld.h/contextuaLearning/directionCue/results_imposeDirection/"
 os.chdir(main_dir)
 
 import warnings
@@ -36,6 +72,16 @@ import warnings
 warnings.filterwarnings("ignore")
 import traceback
 
+subject_sessions = get_subjects_and_sessions(main_dir)
+
+# Convert to format matching your original code
+subjects = [f"sub-{str(num).zfill(2)}" for num in subject_sessions.keys()]
+
+# You can also get sessions per subject if needed
+sessions_by_subject = {
+    f"sub-{str(sub).zfill(2)}": [f"session-{str(sess).zfill(2)}" for sess in sessions]
+    for sub, sessions in subject_sessions.items()
+}
 
 # %% ANEMO parameters
 screen_width_px = 1920  # px
@@ -64,7 +110,7 @@ param_exp = {  # Mandatory :
     # - subject name :
     #'observer' : 's',
     # - list of the names of the events of the trial :
-    "list_events": ["FixOn\n", "FixOff\n", "TargetOn\n", "TargetOff\n"],
+    "list_events": ["FixOn\n", "FixOff\n", "TargetOnSet\n", "TargetOffSet\n"],
     # - target velocity in deg/s :
     # 'V_X_deg' : 15,
     # - presentation time of the target :
@@ -110,18 +156,18 @@ sacc_params = {}
 #     'after_sacc': 15
 
 sacc_params = {
-    1: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 15, "after_sacc": 25},
-    2: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 10, "after_sacc": 20},
-    3: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 15, "after_sacc": 25},
-    4: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 15, "after_sacc": 25},
-    5: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 15, "after_sacc": 25},
-    6: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 15, "after_sacc": 25},
+    1: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 20, "after_sacc": 25},
+    2: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 20, "after_sacc": 20},
+    3: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 20, "after_sacc": 25},
+    4: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 20, "after_sacc": 25},
+    5: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 20, "after_sacc": 25},
+    6: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 20, "after_sacc": 25},
     7: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 20, "after_sacc": 30},
     8: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 20, "after_sacc": 30},
-    10: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 5, "after_sacc": 15},
-    11: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 10, "after_sacc": 20},
-    12: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 5, "after_sacc": 20},
-    13: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 10, "after_sacc": 20},
+    10: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 20, "after_sacc": 15},
+    11: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 20, "after_sacc": 20},
+    12: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 20, "after_sacc": 20},
+    13: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 20, "after_sacc": 20},
     # 14: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 5, "after_sacc": 15},
     # 15: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 10, "after_sacc": 15},
     # 16: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 15, "after_sacc": 25},

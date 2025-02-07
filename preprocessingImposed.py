@@ -24,24 +24,7 @@ from ANEMO.ANEMO import ANEMO, read_edf
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
-print("Current working directory:", os.getcwd())
-print("Contents of current directory:", os.listdir())
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-# %%
-print("Current working directory:", os.getcwd())
-print("Contents of current directory:", os.listdir())
-# %%
-# os.chdir("/Users/mango/Downloads/expHamza/functions/")
-
-print("Current working directory:", os.getcwd())
-print("Contents of current directory:", os.listdir())
-# %%
-# %matplotlib auto
-# %matplotlib inline
-
-# main_dir = "/envau/work/brainets/oueld.h/contextuaLearning/ColorCue/data"
-main_dir = "/envau/work/brainets/oueld.h/contextuaLearning/ColorCue/imposedColorData/"
+main_dir = "/Users/mango/oueld.h/contextuaLearning/ColorCue/imposedColorData/"
 os.chdir(main_dir)
 
 import warnings
@@ -99,11 +82,11 @@ subjects = [
     "sub-08",
     "sub-10",
     "sub-11",
-    "sub-12",
-    "sub-13",
-    "sub-14",
-    "sub-15",
-    "sub-16",
+    # "sub-12",
+    # "sub-13",
+    # "sub-14",
+    # "sub-15",
+    # "sub-16",
 ]
 conditions = [
     "col50-dir25",
@@ -133,11 +116,11 @@ sacc_params = {
     8: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 20, "after_sacc": 30},
     10: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 5, "after_sacc": 15},
     11: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 10, "after_sacc": 20},
-    12: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 5, "after_sacc": 20},
-    13: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 10, "after_sacc": 20},
-    14: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 5, "after_sacc": 15},
-    15: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 10, "after_sacc": 15},
-    16: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 15, "after_sacc": 25},
+    # 12: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 5, "after_sacc": 20},
+    # 13: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 10, "after_sacc": 20},
+    # 14: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 5, "after_sacc": 15},
+    # 15: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 10, "after_sacc": 15},
+    # 16: {"mindur": 5, "maxdur": 100, "minsep": 30, "before_sacc": 15, "after_sacc": 25},
 }
 
 
