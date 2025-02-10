@@ -227,6 +227,7 @@ for idxSub, sub in enumerate(subjects):
                     # get trial data and transform into the arg
                     arg = A.arg(data_trial=data[trial], trial=trial, block=0)
 
+                    print(arg.keys())
                     TargetOn_0 = arg.TargetOn - arg.t_0
 
                     pos_deg_x = A.data_deg(
