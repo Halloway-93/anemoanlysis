@@ -242,10 +242,10 @@ for idxSub, sub in enumerate(subjects):
         print(session_dir)
         try:
             # read data
-            h5_rawfile = os.path.join(session_dir, "posFilter.h5")
-            temp = pd.read_hdf(h5_rawfile, "data")
-            print(temp)
-            tempDF = pd.concat([tempDF, temp_tmp], ignore_index=True)
+            h5_file = os.path.join(session_dir, "posFilter.h5")
+            print(h5_file)
+            temp = pd.read_hdf(h5_file, "data")
+            tempDF = pd.concat([tempDF, temp], ignore_index=True)
             # if you do a manual quality check, you should exclude the bad trials here
 
         except Exception as e:
@@ -279,7 +279,7 @@ for idxSub, sub in enumerate(subjects):
 
     float_keys = ["aSPv", "aSPon", "SPacc", "SPss", "SPlat"]
     params[float_keys] = params[float_keys].astype(float)
-    h5_file=os.path.join(main_dir, sub,"smoothPursuitData.h5")
+    h5_file = os.path.join(main_dir, sub, "smoothPursuitData.h5")
     params.to_hdf(h5_file, "data")
 
     del tempDF, temp

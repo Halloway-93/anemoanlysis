@@ -179,8 +179,9 @@ for sub in subjects:
                 if index == 0:
                     data = pd.DataFrame(newData, columns=keys2save)
                 else:
-                    data = pd.concat([data,
-                        pd.DataFrame(newData, columns=keys2save)], ignore_index=True
+                    data = pd.concat(
+                        [data, pd.DataFrame(newData, columns=keys2save)],
+                        ignore_index=True,
                     )
 
             # cast data to correct format
@@ -220,7 +221,7 @@ for sub in subjects:
             print(h5_file)
             temp_tmp = pd.read_hdf(h5_file, "imposedColorData/")
             print(temp_tmp)
-            tempDF = pd.concat([tempDF, temp_tmp ], ignore_index=True)
+            tempDF = pd.concat([tempDF, temp_tmp], ignore_index=True)
             # if you do a manual quality check, you should exclude the bad trials here
 
         except Exception as e:

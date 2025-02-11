@@ -260,6 +260,7 @@ for idxSub, sub in enumerate(subjects):
             h5_rawfile = os.path.join(session_dir, "rawData.h5")
             h5_qcfile = os.path.join(session_dir, "qualityControl.h5")
 
+            paramsSub = []
             paramsRaw = []
             qualityCtrl = []
             if main_dir == dirImposed:
@@ -270,7 +271,7 @@ for idxSub, sub in enumerate(subjects):
 
             # print(data)
             # Read the .tsv file
-            tg_dir = pd.read_csv(tsv_file)["target_direction"]
+            tg_dir = pd.read_csv(tsv_file)["target_direction"].values
 
             # Change directions from 0/1 diagonals to -1/1
             param_exp["dir_target"] = [x if x == 1 else -1 for x in tg_dir]
