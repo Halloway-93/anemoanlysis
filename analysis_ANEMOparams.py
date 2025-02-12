@@ -29,9 +29,8 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
 
-main_dir = (
-    "/Volumes/work/brainets/oueld.h/contextuaLearning/ColorCue/imposedColorData/"
-)
+main_dir = "/Users/mango/oueld.h/contextuaLearning/ColorCue/imposedColorData/"
+main_dir = "/Users/mango/oueld.h/attentionalTask/data/"
 os.chdir(main_dir)  # pc lab
 
 # %matplotlib auto
@@ -82,8 +81,8 @@ subjects = [
     "sub-08",
     "sub-10",
     "sub-11",
-    # "sub-12",
-    # "sub-13",
+    "sub-12",
+    "sub-13",
     # "sub-14",
     # "sub-15",
     # "sub-16",
@@ -118,7 +117,7 @@ dataSub = pd.DataFrame()
 for sub in subjects:
     try:
         h5_file = "{sub}/{sub}_smoothPursuitData.h5".format(sub=sub)
-        data_tmp = pd.read_hdf(h5_file, "imposedColorData")
+        data_tmp = pd.read_hdf(h5_file, "data")
 
         # if the start_anti = latency-1, them there's no anticipation... so changes the value to nan
         data_tmp["aSPon"][data_tmp["aSPoff"] == data_tmp["aSPon"] + 1] = np.nan
@@ -193,7 +192,7 @@ for k in keys2plot:  # for each variable to plot
     # plt.savefig('allSubs_{}_violinplot.svg'.format(k[2]))
 
 # export data for LMM
-dataSub.to_csv(f"{lmm_dir}/dataANEMO_allSubs_passiveColorCP.csv")
+dataSub.to_csv(f"{lmm_dir}/dataANEMO_allSubs_attentionColorCP.csv")
 
 # %%
 

@@ -87,7 +87,7 @@ dirVoluntary = (
 dirImposed = (
     "/Users/mango/oueld.h/contextuaLearning/directionCue/results_imposeDirection/"
 )
-main_dir = dirVoluntary
+main_dir = dirImposed
 
 subject_sessions = get_subjects_and_sessions(main_dir)
 
@@ -109,7 +109,8 @@ print(sessions_by_subject)
 # then you can skip this cell)
 
 keys2save = [
-    "subject",
+    "sub",
+    "session",
     "condition",
     "trial",
     "trialType",
@@ -169,11 +170,13 @@ for idxSub, sub in enumerate(subjects):
 
                 subj = np.array(np.arange(len(row["time_x"]))).astype(object)
                 condi = np.array(np.arange(len(row["time_x"]))).astype(object)
+                sessioni = np.array(np.arange(len(row["time_x"]))).astype(object)
                 trial = np.array(np.arange(len(row["time_x"])))
                 trialTp = np.array(np.arange(len(row["time_x"]))).astype(object)
                 tgdir = np.array(np.arange(len(row["time_x"]))).astype(object)
-                subj[:] = sub
+                subj[:] = int(subNumber)
                 condi[:] = row["condition"]
+                sessioni[:] = row["session"]
                 trial[:] = row["trial"]
                 tgdir[:] = row["direction"]
                 trialTp[:] = row["trialType"]
@@ -181,6 +184,7 @@ for idxSub, sub in enumerate(subjects):
                 newData = np.vstack(
                     (
                         subj,
+                        sessioni,
                         condi,
                         trial,
                         trialTp,
@@ -214,6 +218,7 @@ for idxSub, sub in enumerate(subjects):
 # run if you don't have the sXX_4C_smoothPursuitData.h5 file
 
 keys = [
+    "session",
     "cond",
     "trial",
     "target_dir",
@@ -263,16 +268,17 @@ for idxSub, sub in enumerate(subjects):
 
     temp = np.empty((len(tempDF), len(keys))).astype(object)
 
-    temp[:, 0] = tempDF["condition"]
-    temp[:, 1] = tempDF["trial"]
-    temp[:, 2] = tempDF["target_dir"]
-    temp[:, 3] = tempDF["trialType"]
-    temp[:, 4] = tempDF["aSPon"]
-    temp[:, 5] = tempDF["aSPv"]
-    temp[:, 6] = tempDF["SPacc"]
-    temp[:, 7] = tempDF["SPss"]
-    temp[:, 8] = tempDF["SPlat"]
-    temp[:, 9] = tempDF["aSPoff"]
+    temp[:, 0] = tempDF["session"]
+    temp[:, 1] = tempDF["condition"]
+    temp[:, 2] = tempDF["trial"]
+    temp[:, 3] = tempDF["target_dir"]
+    temp[:, 4] = tempDF["trialType"]
+    temp[:, 5] = tempDF["aSPon"]
+    temp[:, 6] = tempDF["aSPv"]
+    temp[:, 7] = tempDF["SPacc"]
+    temp[:, 8] = tempDF["SPss"]
+    temp[:, 9] = tempDF["SPlat"]
+    temp[:, 10] = tempDF["aSPoff"]
 
     params = []
     params = pd.DataFrame(temp, columns=keys)

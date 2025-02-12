@@ -3,7 +3,8 @@
 """
 Created on Tue Jun  30 12:22:01 2020
 
-@author: Vanessa Morita
+@author: Hamza O.K. El Hallaoui
+inspired by:  Vanessa Morita
 
 This script analyses the extracted anemo params
 - generates the velocity schema for the experiment design figure
@@ -18,16 +19,13 @@ This script analyses the extracted anemo params
 # %% bibs
 # run always
 import os
-import sys
-import h5py
-import time as timer
 import numpy as np
 import pandas as pd
 from functions.utils import *
-from ANEMO.ANEMO import ANEMO, read_edf
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
+from pathlib import Path
+import re
 
 SMALL_SIZE = 8  # points
 MEDIUM_SIZE = 9
@@ -111,8 +109,9 @@ dirVoluntary = (
 dirImposed = (
     "/Users/mango/oueld.h/contextuaLearning/directionCue/results_imposeDirection/"
 )
-main_dir = dirVoluntary
+main_dir = dirImposed
 
+os.chdir(main_dir)  # pc lab
 subject_sessions = get_subjects_and_sessions(main_dir)
 
 subjects = [f"sub-{str(num).zfill(3)}" for num in subject_sessions.keys()]
@@ -124,10 +123,10 @@ sessions_by_subject = {
 }
 
 
-colormap = {
-    "Red": np.array([255, 25, 7, 255]) / 255,
-    "Green": np.array([25, 255, 120, 255]) / 255,
-}
+# colormap = {
+#     "Red": np.array([255, 25, 7, 255]) / 255,
+#     "Green": np.array([25, 255, 120, 255]) / 255,
+# }
 
 # # %% violinplots + export mean Velocities
 print("Plotting parameters - violin plots")
@@ -152,25 +151,29 @@ for sub in subjects:
         print(data_tmp)
         # if the start_anti = latency-1, them there's no anticipation... so changes the value to nan
         data_tmp["aSPon"][data_tmp["aSPoff"] == data_tmp["aSPon"] + 1] = np.nan
-        data_tmp["trial_color"] = [x[:-1] for x in data_tmp["trialType"]]
-        data_tmp["sub"] = sub
+        data_tmp["sub"] = int(sub.split("-")[1])
 
         dataSub = pd.concat([dataSub, data_tmp], ignore_index=True)
 
-        print(dataSub)
     except Exception as e:
         print("Error! \n Couldn't process {}".format(sub))
         # traceback.print_exc()
 # %%
+dataSub
+# %%
+
 allEvents = pd.read_csv(os.path.join(main_dir, "allEvents.csv"))
 allEvents
 # %%
 # To align anemo data that start at trial 0
 allEvents["trial"] = allEvents["trial"].values - 1
-dataSub.drop(columns=["sub"], inplace=True)
-
+allEvents.rename(columns={"proba": "cond"}, inplace=True)
 # %%
-dataSub = dataSub.merge(allEvents, on="trial", how="inner")
+dataSub.columns
+# %%
+dataSub = dataSub.merge(allEvents, on=["sub", "cond", "trial"], how="inner")
+# %%
+dataSub
 # %%
 keys2plot = [
     ["aSPon", 300, "Anticipation Onset", "ms"],
@@ -183,8 +186,9 @@ for k in keys2plot:  # for each variable to plot
     fig1 = plt.figure(figsize=(single_col, 6 * cm))  # width, height in inches
     plt.title("{0}".format(k[2]))
     sns.violinplot(
-        x="proba",
+        x="cond",
         y=k[0],
+        # hue="chosen_arrow",
         hue="arrow",
         data=data2plot,
         saturation=1,
@@ -198,7 +202,7 @@ for k in keys2plot:  # for each variable to plot
     )
     # ax.set_xticklabels(labels=list(condList.values()))
     plt.ylabel("{}".format(k[2]))
-    plt.xlabel("P(Right|Red)")
+    plt.xlabel("P(Right|Up)")
     plt.tight_layout()
     # plt.ylim(k[3])
     plt.savefig("allSubs_mean_{}_violinplot".format(k[0]))  # variable
@@ -210,9 +214,10 @@ for k in keys2plot:  # for each variable to plot
     for sub in subjects:
         plt.subplot(4, 4, int(sub[-2:]))
         sns.violinplot(
-            x="proba",
+            x="cond",
             y=k[0],
-            hue="arrow",
+            hue="arrow",  # for imposed condition
+            # hue="chosen_arrow",
             data=data2plot[data2plot["sub"] == sub],
             saturation=1,
             # bw=0.3,
@@ -229,7 +234,7 @@ for k in keys2plot:  # for each variable to plot
     # plt.savefig('allSubs_{}_violinplot.svg'.format(k[2]))
 
 # export data for LMM
-dataSub.to_csv(f"{lmm_dir}/dataANEMO_allSubs_passiveArrow.csv")
+dataSub.to_csv(f"{lmm_dir}/dataANEMO_allSubs_imposedArrow.csv", index=True)
 
 # %%
 
@@ -247,8 +252,9 @@ for k in keys2plot:  # for each variable to plot
     plt.subplot(1, 2, 1)
     plt.title("Leftwards trials")
     sns.violinplot(
-        x="proba",
+        x="cond",
         y=k[0],
+        # hue="chosen_arrow",
         hue="arrow",
         hue_order=["down", "up"],
         data=data2plot[data2plot["target_dir"] == -1],
@@ -268,8 +274,9 @@ for k in keys2plot:  # for each variable to plot
     plt.subplot(1, 2, 2)
     plt.title("Rightwards trials")
     sns.violinplot(
-        x="proba",
+        x="cond",
         y=k[0],
+        # hue="chosen_arrow",
         hue="arrow",
         hue_order=["down", "up"],
         data=data2plot[data2plot["target_dir"] == 1],

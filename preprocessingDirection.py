@@ -1,7 +1,4 @@
 import os
-import sys
-import h5py
-import time as timer
 import numpy as np
 import pandas as pd
 from functions.utils import *
@@ -276,6 +273,10 @@ for idxSub, sub in enumerate(subjects):
             # Read the .tsv file
             tg_dir = pd.read_csv(tsv_file)["target_direction"].values
 
+            # Getting the probabilty from the csv file.
+
+            proba = pd.read_csv(tsv_file)["proba"].values[0]
+
             # Change directions from 0/1 diagonals to -1/1
             param_exp["dir_target"] = [x if x == 1 else -1 for x in tg_dir]
 
@@ -297,9 +298,9 @@ for idxSub, sub in enumerate(subjects):
 
                     # Get trial data and transform into the arg
                     arg = A.arg(data_trial=data[trial], trial=trial, block=0)
-                    print(arg)
+                    # print(arg)
 
-                    TargetOn_0 = arg.TargetOn - arg.t_0
+                    TargetOnIndex = arg.TargetOn - arg.t_0
 
                     pos_deg_x = A.data_deg(
                         data=arg.data_x,
@@ -430,7 +431,8 @@ for idxSub, sub in enumerate(subjects):
                         sacc[1] = sacc[1] - arg.TargetOn
 
                     sDict = {
-                        "condition": session,
+                        "condition": proba,
+                        "session": session,
                         "trial": trial,
                         "trialType": type_dir,
                         "direction": param_exp["dir_target"][trial],
@@ -456,15 +458,26 @@ for idxSub, sub in enumerate(subjects):
                         )
 
                     # test: if bad trial
+                    # Getting the newTargetOnset index
+                    newTargetOnset = np.where(time_x == 0)[0][0]
+
                     if (
-                        np.mean(np.isnan(vel_x[TargetOn_0 - 100 : TargetOn_0 + 100]))
+                        np.mean(
+                            np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])
+                        )
                         > 0.7
-                        or np.mean(np.isnan(vel_x[:-time_sup])) > 0.6
-                        or longestNanRun(vel_x[TargetOn_0 - 150 : TargetOn_0 + 600])
+                        or np.mean(np.isnan(vel_x[:-time_sup])) > 0.5
+                        or longestNanRun(
+                            vel_x[newTargetOnset - 150 : newTargetOnset + 600]
+                        )
                         > 200
-                        or abs(np.nanmean(vel_x[TargetOn_0 + 300 : TargetOn_0 + 600]))
+                        or abs(
+                            np.nanmean(
+                                vel_x[newTargetOnset + 300 : newTargetOnset + 600]
+                            )
+                        )
                         < 4
-                        or abs(np.nanmean(vel_x[TargetOn_0 : TargetOn_0 + 100])) > 8
+                        # or abs(np.nanmean(vel_x[TargetOnIndex : TargetOnIndex + 100])) > 8
                     ):
 
                         print("Skipping bad trial...")
@@ -473,29 +486,36 @@ for idxSub, sub in enumerate(subjects):
                         fig = plt.figure(figsize=(10, 4))
                         plt.suptitle("Trial %d" % trial)
                         plt.subplot(1, 2, 1)
-                        plt.plot(vel_x[:-time_sup])
-                        plt.axvline(x=200, linewidth=1, linestyle="--", color="k")
-                        plt.axvline(x=800, linewidth=1, linestyle="--", color="k")
-                        plt.xlim(-100, 1200)
+                        plt.plot(time_x, vel_x)
+                        plt.axvline(x=time_x[0], linewidth=1, linestyle="--", color="k")
+                        plt.axvline(
+                            x=time_x[-1], linewidth=1, linestyle="--", color="k"
+                        )
+                        # plt.xlim(-100, 1200)
                         plt.ylim(-15, 15)
                         plt.xlabel("Time (ms)")
                         plt.ylabel("Velocity - x axis")
                         plt.subplot(1, 2, 2)
-                        plt.plot(vel_x[:-time_sup])
-                        plt.axvline(x=200, linewidth=1, linestyle="--", color="k")
-                        plt.axvline(x=800, linewidth=1, linestyle="--", color="k")
-                        plt.xlim(-100, 1200)
+                        plt.plot(time_y, vel_y)
+                        plt.axvline(x=time_y[0], linewidth=1, linestyle="--", color="k")
+                        plt.axvline(
+                            x=time_y[-1], linewidth=1, linestyle="--", color="k"
+                        )
+                        # plt.xlim(-100, 1200)
                         plt.ylim(-35, 35)
                         plt.xlabel("Time (ms)")
                         plt.ylabel("Velocity - y axis")
                         # plt.show()
                         # plt.pause(0.050)
                         # plt.clf()
-
+                        # print("Time", newTargetOnset)
                         reason = ""
+                        # print(vel_x[TargetOnIndex - 100 : TargetOnIndex + 100])
                         if (
                             np.mean(
-                                np.isnan(vel_x[TargetOn_0 - 100 : TargetOn_0 + 100])
+                                np.isnan(
+                                    vel_x[newTargetOnset - 100 : newTargetOnset + 100]
+                                )
                             )
                             > 0.7
                         ):
@@ -509,7 +529,9 @@ for idxSub, sub in enumerate(subjects):
                             reason = reason + " >{0} of NaNs overall".format(0.6)
                             nanOverallpdf.savefig(fig)
                         if (
-                            longestNanRun(vel_x[TargetOn_0 - 150 : TargetOn_0 + 600])
+                            longestNanRun(
+                                vel_x[newTargetOnset - 150 : newTargetOnset + 600]
+                            )
                             > 200
                         ):
                             print("at least one nan sequence with more than 200ms")
@@ -519,21 +541,26 @@ for idxSub, sub in enumerate(subjects):
                             )
                             nanSequencepdf.savefig(fig)
                         if (
-                            abs(np.nanmean(vel_x[TargetOn_0 + 300 : TargetOn_0 + 600]))
+                            abs(
+                                np.nanmean(
+                                    vel_x[newTargetOnset + 300 : newTargetOnset + 600]
+                                )
+                            )
                             < 4
                         ):
                             print("No smooth pursuit")
                             reason = reason + " No smooth pursuit"
                             nanSequencepdf.savefig(fig)
-                        if abs(np.nanmean(vel_x[TargetOn_0 : TargetOn_0 + 100])) > 8:
-                            print("Noisy around target onset")
-                            reason = reason + " Noisy around target onset"
-                            nanSequencepdf.savefig(fig)
+                        # if abs(np.nanmean(vel_x[TargetOnIndex : TargetOnIndex + 100])) > 8:
+                        #     print("Noisy around target onset")
+                        #     reason = reason + " Noisy around target onset"
+                        #     nanSequencepdf.savefig(fig)
 
                         plt.close(fig)
 
                         newResult = dict()
-                        newResult["condition"] = session
+                        newResult["condition"] = proba
+                        newResult["session"] = session
                         newResult["trial"] = trial
                         newResult["trialType"] = type_dir
                         newResult["target_dir"] = param_exp["dir_target"][trial]
@@ -548,7 +575,8 @@ for idxSub, sub in enumerate(subjects):
 
                         qCtrl = dict()
                         qCtrl["sub"] = sub
-                        qCtrl["condition"] = session
+                        qCtrl["condition"] = proba
+                        qCtrl["session"] = session
                         qCtrl["trial"] = trial
                         qCtrl["keep_trial"] = 0
                         qCtrl["good_fit"] = 0
@@ -619,7 +647,8 @@ for idxSub, sub in enumerate(subjects):
                             eq_x[: len(eq_x_tmp)] = eq_x_tmp
 
                         newResult = dict()
-                        newResult["condition"] = session
+                        newResult["condition"] = proba
+                        newResult["session"] = session
                         newResult["trial"] = trial
                         newResult["trialType"] = type_dir
                         newResult["target_dir"] = param_exp["dir_target"][trial]
@@ -696,7 +725,8 @@ for idxSub, sub in enumerate(subjects):
 
                         qCtrl = dict()
                         qCtrl["sub"] = sub
-                        qCtrl["condition"] = session
+                        qCtrl["condition"] = proba
+                        qCtrl["session"] = session
                         qCtrl["trial"] = trial
 
                         if newResult["rmse_x"] > 10:
