@@ -98,6 +98,7 @@ print(subjects)
 print(sessions_by_subject)
 # %% ANEMO parameters
 sacc_params = get_unified_sacc_params(subjects)
+sacc_params
 # %%
 screen_width_px = 1920  # px
 screen_height_px = 1080  # px
@@ -107,6 +108,8 @@ viewingDistance = 57.0  # cm
 tan = np.arctan((screen_width_cm / 2) / viewingDistance)
 screen_width_deg = 2.0 * tan * 180 / np.pi
 px_per_deg = screen_width_px / screen_width_deg
+# the actual value coming from eylink setup
+px_per_deg = 27.4620
 #
 if main_dir == dirImposed:
     param_exp = {  # Mandat
@@ -264,10 +267,10 @@ for idxSub, sub in enumerate(subjects):
             paramsRaw = []
             qualityCtrl = []
             if main_dir == dirImposed:
-                data = read_edf(asc_file, start="StimOn")
+                data = read_edf(asc_file, start="StimOn", stop="blank_screen")
             else:
 
-                data = read_edf(asc_file, start="FixOn")
+                data = read_edf(asc_file, start="FixOn", stop="blank_screen")
 
             # print(data)
             # Read the .tsv file

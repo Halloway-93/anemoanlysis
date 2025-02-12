@@ -191,7 +191,6 @@ for idxSub, sub in enumerate(subjects):
                     )
                 ).T
 
-                print(data)
                 if index == 0:
                     data = pd.DataFrame(newData, columns=keys2save)
                 else:
@@ -204,6 +203,7 @@ for idxSub, sub in enumerate(subjects):
             data[float_keys] = data[float_keys].astype(float)
             data[int_keys] = data[int_keys].astype(int)
 
+            print(data)
             data.to_hdf(h5_rawfile, "rawFormatted")
         except Exception as e:
             print("Error! \n Couldn't process {}, condition {}".format(sub, session))
@@ -249,7 +249,7 @@ for idxSub, sub in enumerate(subjects):
             # if you do a manual quality check, you should exclude the bad trials here
 
         except Exception as e:
-            print("Error! \n Couldn't process {}, condition {}".format(sub, cond))
+            print("Error! \n Couldn't process {}, condition {}".format(sub, session))
             traceback.print_exc()
 
     print("\t", tempDF.shape)

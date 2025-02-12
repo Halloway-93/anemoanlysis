@@ -1,12 +1,15 @@
 import pandas as pd
 
 df = pd.read_hdf(
-    "/Users/mango/oueld.h/contextuaLearning/directionCue/results_voluntaryDirection/sub-006/session-04/rawData.h5"
+    "/Users/mango/oueld.h/contextuaLearning/ColorCue/data/sub-01/sub-01_col50-dir50_rawData.h5",
+    "data",
 )
 # %%
 df.columns
 # %%
-df.saccades[1]
+df.saccades
+# %%
+df.velocity_y
 # %%
 import matplotlib.pyplot as plt
 
