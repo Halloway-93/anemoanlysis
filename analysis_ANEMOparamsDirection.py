@@ -109,9 +109,9 @@ dirVoluntary = (
 dirImposed = (
     "/Users/mango/oueld.h/contextuaLearning/directionCue/results_imposeDirection/"
 )
-main_dir = dirImposed
+main_dir = dirVoluntary
 
-os.chdir(main_dir)  # pc lab
+os.chdir(main_dir)
 subject_sessions = get_subjects_and_sessions(main_dir)
 
 subjects = [f"sub-{str(num).zfill(3)}" for num in subject_sessions.keys()]
@@ -188,8 +188,8 @@ for k in keys2plot:  # for each variable to plot
     sns.violinplot(
         x="cond",
         y=k[0],
-        # hue="chosen_arrow",
-        hue="arrow",
+        hue="chosen_arrow",
+        # hue="arrow",
         data=data2plot,
         saturation=1,
         # bw=0.3,
@@ -216,8 +216,8 @@ for k in keys2plot:  # for each variable to plot
         sns.violinplot(
             x="cond",
             y=k[0],
-            hue="arrow",  # for imposed condition
-            # hue="chosen_arrow",
+            # hue="arrow",  # for imposed condition
+            hue="chosen_arrow",
             data=data2plot[data2plot["sub"] == sub],
             saturation=1,
             # bw=0.3,
@@ -234,231 +234,233 @@ for k in keys2plot:  # for each variable to plot
     # plt.savefig('allSubs_{}_violinplot.svg'.format(k[2]))
 
 # export data for LMM
-dataSub.to_csv(f"{lmm_dir}/dataANEMO_allSubs_imposedArrow.csv", index=True)
-
+if main_dir == dirImposed:
+    dataSub.to_csv(f"{lmm_dir}/dataANEMO_allSubs_imposedArrow.csv", index=False)
+else:
+    dataSub.to_csv(f"{lmm_dir}/dataANEMO_allSubs_voluntaryArrow.csv", index=False)
 # %%
 
-data2plot = dataSub  # select the data to plot
-
-keys2plot = [
-    ["SPlat", 75, "Latency", "ms", [50, 350]],
-    ["SPacc", 70, "Pursuit acceleration", "deg/s^2", [0, 250]],
-    ["SPss", 70, "Steady state", "deg/s", [0, 20]],
-]
-for k in keys2plot:  # for each variable to plot
-
-    fig1 = plt.figure(figsize=(two_col, 6 * cm))  # width, height in inches
-    plt.suptitle(k[2])
-    plt.subplot(1, 2, 1)
-    plt.title("Leftwards trials")
-    sns.violinplot(
-        x="cond",
-        y=k[0],
-        # hue="chosen_arrow",
-        hue="arrow",
-        hue_order=["down", "up"],
-        data=data2plot[data2plot["target_dir"] == -1],
-        saturation=1,
-        # bw=0.3,
-        cut=0,
-        # size=3,
-        # aspect=1,
-        linewidth=1,
-        split=True,
-        inner="quartile",
-    )
-    # ax.set_xticklabels(labels=list(condList.values()))
-    plt.xlabel("P(Right|Up)")
-    plt.ylim(k[4])
-
-    plt.subplot(1, 2, 2)
-    plt.title("Rightwards trials")
-    sns.violinplot(
-        x="cond",
-        y=k[0],
-        # hue="chosen_arrow",
-        hue="arrow",
-        hue_order=["down", "up"],
-        data=data2plot[data2plot["target_dir"] == 1],
-        saturation=1,
-        # bw=0.3,
-        cut=0,
-        # size=3,
-        # aspect=1,
-        linewidth=1,
-        split=True,
-        inner="quartile",
-    )
-    plt.xlabel("P(Right|Up)")
-    plt.tight_layout()
-    plt.ylim(k[4])
-    plt.savefig(f"allSubs_mean_{k[0]}_leftVsRight_violinplot")  # variable
-
-    plt.show()
-
-# %%
-# Run R code - LMM analysis before running the next cells
-
-
-# %%
-# read LME results from csv gnerated on R
-lme_raneff = pd.read_csv("{}/lmm_randomEffects.csv".format(lmm_dir))
-lme_fixeffAntiVel = pd.read_csv("{}/lmm_fixedEffectsAnti.csv".format(lmm_dir))
-
-lme_fixeffAntiVel.at[0, "Unnamed: 0"] = "Intercept"
-
-lme_raneff.set_index("Unnamed: 0", inplace=True)
-lme_fixeffAntiVel.set_index("Unnamed: 0", inplace=True)
-
-lme_fixeffAnti = lme_fixeffAntiVel
-
-lme_fixeffAnti.fillna(0, inplace=True)
-lme_raneff.fillna(0, inplace=True)
-
-anticipParams = [
-    ["aSPv", "Anticipatory eye velocity", [-1.7, 1.7], "Horizontal aSPv (°/s)"],
-]
-anticipData = dataSub.groupby(["sub", "cond", "trial_color"]).mean()
-anticipData.reset_index(inplace=True)
-
-
-def listReverse(l):
-    return np.array(list(l).reverse())
-
-
-xAxis = np.array([-0.25, 0, 0.25])
-xAxis = np.array([0.25, 0.5, 0.75])
-
-for p in anticipParams:
-    print("Plotting: {}".format(p[1]))
-
-    intercept = lme_fixeffAnti.loc["Intercept", p[0]]
-    pR_Col = lme_fixeffAnti.loc["prob", p[0]]
-    trialCol = lme_fixeffAnti.loc["trial_colorGreen", p[0]]
-    pR_Col_tCol = lme_fixeffAnti.loc["prob:trial_colorGreen", p[0]]
-
-    fig1 = plt.figure(figsize=(single_col, 7 * cm))  # width, height
-    plt.suptitle(p[1])
-    ax = plt.subplot(1, 1, 1)
-    ax2 = ax.twiny()  # applies twinx to ax2, which is the second y axis.
-    for sub in subjects:
-        raneff = lme_raneff.loc[
-            (lme_raneff["sub"] == sub) & (lme_raneff["var"] == p[0])
-        ]
-        s_pR_Col = raneff["prob"]
-        s_trialCol = raneff["trial_color"]
-        s_intercept = raneff["Intercept"]
-
-        # x = xAxis if p[0]=='velocity_model_x' else abs(xAxis)
-        x = xAxis
-
-        pRRed25_redTg = (
-            (s_pR_Col + pR_Col) * x[0]
-            + (s_trialCol + trialCol) * 0
-            + (pR_Col_tCol) * x[0] * 0
-            + s_intercept
-            + intercept
-        )
-        pRRed50_redTg = (
-            (s_pR_Col + pR_Col) * x[1]
-            + (s_trialCol + trialCol) * 0
-            + (pR_Col_tCol) * x[1] * 0
-            + s_intercept
-            + intercept
-        )
-        pRRed75_redTg = (
-            (s_pR_Col + pR_Col) * x[2]
-            + (s_trialCol + trialCol) * 0
-            + (pR_Col_tCol) * x[2] * 0
-            + s_intercept
-            + intercept
-        )
-
-        pRRed25_greenTg = (
-            (s_pR_Col + pR_Col) * x[0]
-            + (s_trialCol + trialCol) * 1
-            + (pR_Col_tCol) * x[0] * 1
-            + s_intercept
-            + intercept
-        )
-        pRRed50_greenTg = (
-            (s_pR_Col + pR_Col) * x[1]
-            + (s_trialCol + trialCol) * 1
-            + (pR_Col_tCol) * x[1] * 1
-            + s_intercept
-            + intercept
-        )
-        pRRed75_greenTg = (
-            (s_pR_Col + pR_Col) * x[2]
-            + (s_trialCol + trialCol) * 1
-            + (pR_Col_tCol) * x[2] * 1
-            + s_intercept
-            + intercept
-        )
-
-        ax.plot(
-            np.array([0.25, 0.5, 0.75]) + 0.05,
-            [pRRed25_redTg, pRRed50_redTg, pRRed75_redTg],
-            color=colormap["Red"],
-            alpha=0.1,
-        )
-        ax.plot(
-            np.array([0.25, 0.5, 0.75]) - 0.05,
-            [pRRed25_greenTg, pRRed50_greenTg, pRRed75_greenTg],
-            color=colormap["Green"],
-            alpha=0.2,
-        )
-
-    sns.swarmplot(
-        data=anticipData,
-        x="pR-Red",
-        y=p[0],
-        hue="trial_color",
-        palette=colormap,
-        dodge=True,
-        legend=False,
-        size=4,
-        ax=ax2,
-    )
-    sns.boxplot(
-        data=anticipData,
-        x="pR-Red",
-        y=p[0],
-        hue="trial_color",
-        palette=colormap,
-        dodge=True,
-        ax=ax2,
-        width=0.85,
-        showfliers=False,
-        showmeans=False,
-        meanprops=dict(
-            marker="o",
-            markerfacecolor="white",
-            markeredgecolor="none",
-            markersize=3,
-            zorder=3,
-        ),
-        boxprops=dict(facecolor=(0.1, 0.1, 0.1, 0), linewidth=1, zorder=3),
-        whiskerprops=dict(linewidth=1),
-        capprops=dict(linewidth=0),
-        medianprops=dict(linewidth=2, color="gold", zorder=4),
-    )
-    # plt.setp(ax.collections, alpha=.3)
-    # plt.setp(ax2.collections, alpha=.4)
-    plt.legend("", frameon=False)
-    plt.ylim(p[2])
-
-    ax2.set_xticklabels(["0.75", "0.50", "0.25"])
-    ax2.set_xlabel("P(R|Green)")
-
-    ax.set_ylabel(p[3])
-    ax.set_xlim([0.12, 0.88])
-    ax.set_xticks([0.25, 0.5, 0.75])
-    ax.set_xlabel("P(R|Red)")
-
-    plt.tight_layout()
-    plt.savefig("colorCondProba_{}.pdf".format(p[0]))
-    plt.savefig("colorCondProba_{}.png".format(p[0]))
-
-
-# %%
+# data2plot = dataSub  # select the data to plot
+#
+# keys2plot = [
+#     ["SPlat", 75, "Latency", "ms", [50, 350]],
+#     ["SPacc", 70, "Pursuit acceleration", "deg/s^2", [0, 250]],
+#     ["SPss", 70, "Steady state", "deg/s", [0, 20]],
+# ]
+# for k in keys2plot:  # for each variable to plot
+#
+#     fig1 = plt.figure(figsize=(two_col, 6 * cm))  # width, height in inches
+#     plt.suptitle(k[2])
+#     plt.subplot(1, 2, 1)
+#     plt.title("Leftwards trials")
+#     sns.violinplot(
+#         x="cond",
+#         y=k[0],
+#         # hue="chosen_arrow",
+#         hue="arrow",
+#         hue_order=["down", "up"],
+#         data=data2plot[data2plot["target_dir"] == -1],
+#         saturation=1,
+#         # bw=0.3,
+#         cut=0,
+#         # size=3,
+#         # aspect=1,
+#         linewidth=1,
+#         split=True,
+#         inner="quartile",
+#     )
+#     # ax.set_xticklabels(labels=list(condList.values()))
+#     plt.xlabel("P(Right|Up)")
+#     plt.ylim(k[4])
+#
+#     plt.subplot(1, 2, 2)
+#     plt.title("Rightwards trials")
+#     sns.violinplot(
+#         x="cond",
+#         y=k[0],
+#         # hue="chosen_arrow",
+#         hue="arrow",
+#         hue_order=["down", "up"],
+#         data=data2plot[data2plot["target_dir"] == 1],
+#         saturation=1,
+#         # bw=0.3,
+#         cut=0,
+#         # size=3,
+#         # aspect=1,
+#         linewidth=1,
+#         split=True,
+#         inner="quartile",
+#     )
+#     plt.xlabel("P(Right|Up)")
+#     plt.tight_layout()
+#     plt.ylim(k[4])
+#     plt.savefig(f"allSubs_mean_{k[0]}_leftVsRight_violinplot")  # variable
+#
+#     plt.show()
+#
+# # %%
+# # Run R code - LMM analysis before running the next cells
+#
+#
+# # %%
+# # read LME results from csv gnerated on R
+# lme_raneff = pd.read_csv("{}/lmm_randomEffects.csv".format(lmm_dir))
+# lme_fixeffAntiVel = pd.read_csv("{}/lmm_fixedEffectsAnti.csv".format(lmm_dir))
+#
+# lme_fixeffAntiVel.at[0, "Unnamed: 0"] = "Intercept"
+#
+# lme_raneff.set_index("Unnamed: 0", inplace=True)
+# lme_fixeffAntiVel.set_index("Unnamed: 0", inplace=True)
+#
+# lme_fixeffAnti = lme_fixeffAntiVel
+#
+# lme_fixeffAnti.fillna(0, inplace=True)
+# lme_raneff.fillna(0, inplace=True)
+#
+# anticipParams = [
+#     ["aSPv", "Anticipatory eye velocity", [-1.7, 1.7], "Horizontal aSPv (°/s)"],
+# ]
+# anticipData = dataSub.groupby(["sub", "cond", "trial_color"]).mean()
+# anticipData.reset_index(inplace=True)
+#
+#
+# def listReverse(l):
+#     return np.array(list(l).reverse())
+#
+#
+# xAxis = np.array([-0.25, 0, 0.25])
+# xAxis = np.array([0.25, 0.5, 0.75])
+#
+# for p in anticipParams:
+#     print("Plotting: {}".format(p[1]))
+#
+#     intercept = lme_fixeffAnti.loc["Intercept", p[0]]
+#     pR_Col = lme_fixeffAnti.loc["prob", p[0]]
+#     trialCol = lme_fixeffAnti.loc["trial_colorGreen", p[0]]
+#     pR_Col_tCol = lme_fixeffAnti.loc["prob:trial_colorGreen", p[0]]
+#
+#     fig1 = plt.figure(figsize=(single_col, 7 * cm))  # width, height
+#     plt.suptitle(p[1])
+#     ax = plt.subplot(1, 1, 1)
+#     ax2 = ax.twiny()  # applies twinx to ax2, which is the second y axis.
+#     for sub in subjects:
+#         raneff = lme_raneff.loc[
+#             (lme_raneff["sub"] == sub) & (lme_raneff["var"] == p[0])
+#         ]
+#         s_pR_Col = raneff["prob"]
+#         s_trialCol = raneff["trial_color"]
+#         s_intercept = raneff["Intercept"]
+#
+#         # x = xAxis if p[0]=='velocity_model_x' else abs(xAxis)
+#         x = xAxis
+#
+#         pRRed25_redTg = (
+#             (s_pR_Col + pR_Col) * x[0]
+#             + (s_trialCol + trialCol) * 0
+#             + (pR_Col_tCol) * x[0] * 0
+#             + s_intercept
+#             + intercept
+#         )
+#         pRRed50_redTg = (
+#             (s_pR_Col + pR_Col) * x[1]
+#             + (s_trialCol + trialCol) * 0
+#             + (pR_Col_tCol) * x[1] * 0
+#             + s_intercept
+#             + intercept
+#         )
+#         pRRed75_redTg = (
+#             (s_pR_Col + pR_Col) * x[2]
+#             + (s_trialCol + trialCol) * 0
+#             + (pR_Col_tCol) * x[2] * 0
+#             + s_intercept
+#             + intercept
+#         )
+#
+#         pRRed25_greenTg = (
+#             (s_pR_Col + pR_Col) * x[0]
+#             + (s_trialCol + trialCol) * 1
+#             + (pR_Col_tCol) * x[0] * 1
+#             + s_intercept
+#             + intercept
+#         )
+#         pRRed50_greenTg = (
+#             (s_pR_Col + pR_Col) * x[1]
+#             + (s_trialCol + trialCol) * 1
+#             + (pR_Col_tCol) * x[1] * 1
+#             + s_intercept
+#             + intercept
+#         )
+#         pRRed75_greenTg = (
+#             (s_pR_Col + pR_Col) * x[2]
+#             + (s_trialCol + trialCol) * 1
+#             + (pR_Col_tCol) * x[2] * 1
+#             + s_intercept
+#             + intercept
+#         )
+#
+#         ax.plot(
+#             np.array([0.25, 0.5, 0.75]) + 0.05,
+#             [pRRed25_redTg, pRRed50_redTg, pRRed75_redTg],
+#             color=colormap["Red"],
+#             alpha=0.1,
+#         )
+#         ax.plot(
+#             np.array([0.25, 0.5, 0.75]) - 0.05,
+#             [pRRed25_greenTg, pRRed50_greenTg, pRRed75_greenTg],
+#             color=colormap["Green"],
+#             alpha=0.2,
+#         )
+#
+#     sns.swarmplot(
+#         data=anticipData,
+#         x="pR-Red",
+#         y=p[0],
+#         hue="trial_color",
+#         palette=colormap,
+#         dodge=True,
+#         legend=False,
+#         size=4,
+#         ax=ax2,
+#     )
+#     sns.boxplot(
+#         data=anticipData,
+#         x="pR-Red",
+#         y=p[0],
+#         hue="trial_color",
+#         palette=colormap,
+#         dodge=True,
+#         ax=ax2,
+#         width=0.85,
+#         showfliers=False,
+#         showmeans=False,
+#         meanprops=dict(
+#             marker="o",
+#             markerfacecolor="white",
+#             markeredgecolor="none",
+#             markersize=3,
+#             zorder=3,
+#         ),
+#         boxprops=dict(facecolor=(0.1, 0.1, 0.1, 0), linewidth=1, zorder=3),
+#         whiskerprops=dict(linewidth=1),
+#         capprops=dict(linewidth=0),
+#         medianprops=dict(linewidth=2, color="gold", zorder=4),
+#     )
+#     # plt.setp(ax.collections, alpha=.3)
+#     # plt.setp(ax2.collections, alpha=.4)
+#     plt.legend("", frameon=False)
+#     plt.ylim(p[2])
+#
+#     ax2.set_xticklabels(["0.75", "0.50", "0.25"])
+#     ax2.set_xlabel("P(R|Green)")
+#
+#     ax.set_ylabel(p[3])
+#     ax.set_xlim([0.12, 0.88])
+#     ax.set_xticks([0.25, 0.5, 0.75])
+#     ax.set_xlabel("P(R|Red)")
+#
+#     plt.tight_layout()
+#     plt.savefig("colorCondProba_{}.pdf".format(p[0]))
+#     plt.savefig("colorCondProba_{}.png".format(p[0]))
+#
+#
+# # %%

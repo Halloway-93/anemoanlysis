@@ -77,7 +77,7 @@ dirVoluntary = (
 dirImposed = (
     "/Users/mango/oueld.h/contextuaLearning/directionCue/results_imposeDirection/"
 )
-main_dir = dirVoluntary
+main_dir = dirImposed
 
 subject_sessions = get_subjects_and_sessions(main_dir)
 
@@ -416,10 +416,10 @@ for idxSub, sub in enumerate(subjects):
                     pos_x = arg.data_x[idx2keep_x]
                     vel_x = velocity_x_NAN[idx2keep_x]
 
-                    vel_x[:25] = np.nan
-                    vel_y[:25] = np.nan
-                    vel_x[-25:] = np.nan
-                    vel_y[-25:] = np.nan
+                    # vel_x[:25] = np.nan
+                    # vel_y[:25] = np.nan
+                    # vel_x[-25:] = np.nan
+                    # vel_y[-25:] = np.nan
 
                     pos_deg_x = pos_deg_x[idx2keep_x]
                     pos_deg_y = pos_deg_y[idx2keep_y]

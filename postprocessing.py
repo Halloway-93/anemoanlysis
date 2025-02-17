@@ -22,10 +22,6 @@ from functions.utils import *
 from ANEMO.ANEMO import ANEMO, read_edf
 from functions.utils import *
 
-main_dir = "/Users/mango/oueld.h/contextuaLearning/ColorCue/imposedColorData/"
-os.chdir(main_dir)
-
-
 plt.rcParams["figure.facecolor"] = "white"
 plt.rcParams["axes.facecolor"] = "white"
 
@@ -49,7 +45,10 @@ from functions.utils import *
 from ANEMO.ANEMO import ANEMO, read_edf
 from functions.utils import *
 
-main_dir = "/Users/mango/oueld.h/contextuaLearning/ColorCue/imposedColorData/"
+activeColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/data"
+passiveColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/imposedColorData"
+attentionColor = "/Users/mango/oueld.h/attentionalTask/data"
+main_dir = attentionColor
 os.chdir(main_dir)
 
 
@@ -72,23 +71,58 @@ screen_width_deg = 2.0 * tan * 180 / np.pi
 px_per_deg = screen_width_px / screen_width_deg
 
 
-subjects = [
-    "sub-01",
-    "sub-02",
-    "sub-03",
-    "sub-04",
-    "sub-05",
-    "sub-06",
-    "sub-07",
-    "sub-08",
-    "sub-10",
-    "sub-11",
-    # "sub-12",
-    # "sub-13",
-    # "sub-14",
-    # "sub-15",
-    # "sub-16",
-]
+if main_dir == activeColor:
+    subjects = [
+        "sub-01",
+        "sub-02",
+        "sub-03",
+        "sub-04",
+        "sub-05",
+        "sub-06",
+        "sub-07",
+        "sub-08",
+        "sub-09",
+        "sub-10",
+        "sub-11",
+        "sub-12",
+        "sub-13",
+        "sub-14",
+        "sub-15",
+        "sub-16",
+    ]
+elif main_dir == passiveColor:
+
+    subjects = [
+        "sub-01",
+        "sub-02",
+        "sub-03",
+        "sub-04",
+        "sub-05",
+        "sub-06",
+        "sub-07",
+        "sub-08",
+        "sub-09",
+        "sub-10",
+        "sub-11",
+    ]
+
+else:
+
+    subjects = [
+        "sub-01",
+        "sub-02",
+        "sub-03",
+        "sub-04",
+        "sub-05",
+        "sub-06",
+        "sub-07",
+        "sub-08",
+        "sub-09",
+        "sub-10",
+        "sub-11",
+        "sub-12",
+        "sub-13",
+    ]
 
 conditions = [
     "col50-dir25",
@@ -129,7 +163,7 @@ for sub in subjects:
         try:
             # read data
             h5_rawfile = "{sub}/{sub}_{cond}_rawData.h5".format(sub=sub, cond=cond)
-            temp = pd.read_hdf(h5_rawfile, "imposedColorData/")
+            temp = pd.read_hdf(h5_rawfile, "data")
 
             # get bad data
             # h5_qcfile = '{sub}/{sub}_{cond}_qualityControl_afterManualCtrl.h5'.format(sub=sub, cond=cond)
@@ -174,7 +208,6 @@ for sub in subjects:
                         row["velocity_x"],
                     )
                 ).T
-                print(data)
 
                 if index == 0:
                     data = pd.DataFrame(newData, columns=keys2save)
@@ -202,7 +235,6 @@ keys = [
     "trial",
     "target_dir",
     "trialType",
-    # 'trialTgUP',
     "aSPon",
     "aSPv",
     "SPacc",
@@ -219,7 +251,7 @@ for sub in subjects:
         try:
             h5_file = "{sub}/{sub}_{cond}_posFilter.h5".format(sub=sub, cond=cond)
             print(h5_file)
-            temp_tmp = pd.read_hdf(h5_file, "imposedColorData/")
+            temp_tmp = pd.read_hdf(h5_file, "data")
             print(temp_tmp)
             tempDF = pd.concat([tempDF, temp_tmp], ignore_index=True)
             # if you do a manual quality check, you should exclude the bad trials here
@@ -228,7 +260,7 @@ for sub in subjects:
             print("Error! \n Couldn't process {}, condition {}".format(sub, cond))
             traceback.print_exc()
 
-    print("\t", tempDF.shape)
+    # print("\t", tempDF.shape)
     tempDF.dropna(how="all", subset=["t_0", "t_end", "fit_x"], inplace=True)
     try:
         tempDF.drop(["velocity_y", "time"], axis=1, inplace=True)
@@ -258,7 +290,7 @@ for sub in subjects:
     params[float_keys] = params[float_keys].astype(float)
 
     h5_file = "".join([str(sub), "/", str(sub), "_smoothPursuitData.h5"])
-    params.to_hdf(h5_file, "imposedColorData")
+    params.to_hdf(h5_file, "data")
 
     del tempDF, temp
 

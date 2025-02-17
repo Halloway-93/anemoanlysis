@@ -11,16 +11,18 @@ import seaborn as sns
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
 import numpy as np
+from matplotlib.patches import Patch
 
 # %%
-pathFig = "/Users/mango/Contextual-Learning/ColorCue/figures/voluntaryColor/"
-df = pd.read_csv("/Users/mango/anemoanlysis/LMM/dataANEMO_allSubs_activeColorCP.csv")
+pathFig = "/Users/mango/Contextual-Learning/attentionTask/figures/"
+df = pd.read_csv("/Users/mango/anemoanlysis/LMM/dataANEMO_allSubs_attentionColorCP.csv")
 print(df)
 # %%
 df.rename(columns={"pR-Red": "proba"}, inplace=True)
 df.rename(columns={"trial_color": "color"}, inplace=True)
 print(df["sub"].unique())
 # %%
+df = df[(df["sub"] != "sub-10")]
 df["aSPoff"]
 # %%
 sns.histplot(data=df, x="aSPv")
@@ -53,8 +55,7 @@ df.TD_prev
 # %%
 df["TD_prev"] = df["TD_prev"].apply(lambda x: "right" if x == 1 else "left")
 # %%
-# df = df[(df["sub"] != 9)]
-# df = df[df["sub"].isin([1, 2, 5, 7, 8, 11, 13])]
+df = df[(df["sub"] != "sub-10")]
 # %%
 df.columns
 # %%
@@ -151,7 +152,7 @@ statistic_proba, p_value_proba = friedmanchisquare(
     pivot_proba[0.25], pivot_proba[0.50], pivot_proba[0.75]
 )
 print(
-    f"Friedman Test for proba: Statistic(Red) = {statistic_proba}, p-value = {p_value_proba}"
+    f"Friedman Test for proba: Statistic(Green) = {statistic_proba}, p-value = {p_value_proba}"
 )
 
 
@@ -165,7 +166,7 @@ statpivot_proba, p_pivot_proba = friedmanchisquare(
     pivot_proba[0.25], pivot_proba[0.50], pivot_proba[0.75]
 )
 print(
-    f"Friedman Test for proba: Statistic(Green) = {statistic_proba}, p-value = {p_value_proba}"
+    f"Friedman Test for proba: Statistic(Red) = {statistic_proba}, p-value = {p_value_proba}"
 )
 
 
@@ -437,6 +438,8 @@ sns.catplot(
 )
 plt.show()
 # %%
+dd
+# %%
 fig = plt.figure()
 # Toggle full screen mode
 figManager = plt.get_current_fig_manager()
@@ -497,7 +500,7 @@ print(anova_results)
 model = smf.mixedlm(
     "aSPv~C( proba,Treatment(.50)) *color",
     data=df,
-    re_formula="~proba",
+    # re_formula="~proba",
     groups=df["sub"],
 ).fit()
 model.summary()
@@ -528,7 +531,7 @@ normaltest_result = stats.normaltest(residuals)
 print(f"D'Agostino's K^2 test p-value: {normaltest_result.pvalue:.4f}")
 # %%
 model = smf.mixedlm(
-    "aSPv~C( proba,Treatment(.50))",
+    "aSPv~proba",
     data=df[df.color == "Red"],
     re_formula="~proba",
     groups=df[df.color == "Red"]["sub"],
@@ -537,7 +540,7 @@ model.summary()
 
 # %%
 model = smf.mixedlm(
-    "aSPv~C( proba,Treatment(.50))",
+    "aSPv~proba",
     data=df[df.color == "Green"],
     re_formula="~proba",
     groups=df[df.color == "Green"]["sub"],
@@ -567,7 +570,7 @@ print(f"D'Agostino's K^2 test p-value: {normaltest_result.pvalue:.4f}")
 model = smf.mixedlm(
     "aSPv~ C(color)",
     data=df[df.proba == 0.25],
-    re_formula="~color",
+    # re_formula="~color",
     groups=df[df.proba == 0.25]["sub"],
 ).fit()
 model.summary()
@@ -590,7 +593,7 @@ print(f"D'Agostino's K^2 test p-value: {normaltest_result.pvalue:.4f}")
 model = smf.mixedlm(
     "aSPv~ C(color)",
     data=df[df.proba == 0.50],
-    re_formula="~color",
+    # re_formula="~color",
     groups=df[df.proba == 0.50]["sub"],
 ).fit()
 model.summary()
@@ -604,6 +607,10 @@ model = smf.mixedlm(
 model.summary()
 
 # %%
+RedcolorsPalette = ["#e83865", "#cc3131"]
+GreencolorsPalette = ["#008000", "#285943"]
+dd = df.groupby(["sub", "proba", "color"])[["aSPv"]].mean().reset_index()
+# %%
 fig = plt.figure()
 # Toggle full screen mode
 figManager = plt.get_current_fig_manager()
@@ -613,10 +620,11 @@ sns.barplot(
     y="aSPv",
     hue="color",
     errorbar="ci",
-    palette=colors,
+    palette=[GreencolorsPalette[1], RedcolorsPalette[1]],
     hue_order=colors,
+    fill=False,
     data=df,
-    alpha=0.5,
+    # alpha=0.5,
 )
 sns.stripplot(
     x="proba",
@@ -624,10 +632,11 @@ sns.stripplot(
     hue="color",
     data=dd,
     dodge=True,
-    palette=colors,
+    palette=[GreencolorsPalette[1], RedcolorsPalette[1]],
     jitter=True,
     size=8,
-    alpha=0.5,
+    # alpha=0.5,
+    legend=False,
 )
 
 plt.legend(fontsize=20)
@@ -635,15 +644,12 @@ plt.title("ASEM across 3 different probabilites", fontsize=30)
 plt.xlabel("P(Right|Red)=P(Left|Green)", fontsize=30)
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
-plt.ylim(-0.75, 0.75)
+# plt.ylim(-0.75, 0.75)
 plt.legend(fontsize=20)
 plt.ylabel("ASEM (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/aSPvcolors.svg")
+plt.savefig(pathFig + "/aSPvcolors.svg", transparent=True)
 plt.show()
 
-# %%
-
-# getting previous TD for each trial for each subject and each proba
 # %%
 df_prime = df[
     [
@@ -656,20 +662,9 @@ df_prime = df[
         "aSPv",
     ]
 ]
-learningCurve = (
-    df_prime.groupby(["sub", "proba", "color", "TD_prev"])
-    .mean()[["aSPv"]]
-    .reset_index()
-)
-
-
-learningCurve
-# %%
+# sa%%
 df_prime.groupby(["sub", "proba", "color", "TD_prev"]).count()[["aSPv"]]
 
-# %%
-RedcolorsPalette = ["#e83865", "#cc3131"]
-GreencolorsPalette = ["#8cd790", "#285943"]
 # %%
 fig = plt.figure()
 # Toggle full screen mode
@@ -678,7 +673,7 @@ figManager.full_screen_toggle()
 sns.barplot(
     x="proba",
     y="aSPv",
-    color="Red",
+    color=RedcolorsPalette[1],
     data=df[df["color"] == "Red"],
 )
 plt.title("Anticipatory Smooth Eye Movement: color Red", fontsize=30)
@@ -687,7 +682,7 @@ plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
 plt.ylim(-0.75, 0.75)
 plt.ylabel("ASEM (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/aSPvRed.svg")
+plt.savefig(pathFig + "/aSPvRed.svg", transparent=True)
 plt.show()
 # %%
 fig = plt.figure()
@@ -697,44 +692,7 @@ figManager.full_screen_toggle()
 sns.barplot(
     x="proba",
     y="aSPv",
-    hue="TD_prev",
-    hue_order=["left", "right"],
-    errorbar="ci",
-    palette=RedcolorsPalette,
-    data=df[df.color == "Red"],
-    alpha=0.5,
-)
-sns.stripplot(
-    x="proba",
-    y="aSPv",
-    hue="TD_prev",
-    hue_order=["left", "right"],
-    palette=RedcolorsPalette,
-    dodge=True,
-    jitter=True,
-    size=8,
-    alpha=0.7,
-    data=dd[dd.color == "Red"],
-    legend=False,
-)
-plt.legend(fontsize=20)
-plt.title("Anticipatory Velocity Given Previous TD: color Red ", fontsize=30)
-plt.xlabel("P(Right|Red)", fontsize=30)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
-plt.xticks(fontsize=25)
-plt.yticks(fontsize=25)
-plt.ylim(-0.75, 0.75)
-plt.savefig(pathFig + "/aSPvRedTD.svg")
-plt.show()
-# %%
-fig = plt.figure()
-# Toggle full screen mode
-figManager = plt.get_current_fig_manager()
-figManager.full_screen_toggle()
-sns.barplot(
-    x="proba",
-    y="aSPv",
-    color="Green",
+    color=GreencolorsPalette[1],
     errorbar="ci",
     data=df[df.color == "Green"],
 )
@@ -744,22 +702,35 @@ plt.ylabel("ASEM (deg/s)", fontsize=30)
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
 plt.ylim(-0.75, 0.75)
-plt.savefig(pathFig + "/aSPvGreen.svg")
+plt.savefig(pathFig + "/aSPvGreen.svg", transparent=True)
 plt.show()
 # %%
-fig = plt.figure()
-# Toggle full screen mode
-figManager = plt.get_current_fig_manager()
-figManager.full_screen_toggle()
-sns.barplot(
+dd = df.groupby(["sub", "color", "proba", "TD_prev"])[["aSPv"]].mean().reset_index()
+# %%
+# Create the plot using catplot
+g = sns.catplot(
+    data=df[df.color == "Green"],
     x="proba",
     y="aSPv",
     hue="TD_prev",
-    hue_order=["left", "right"],
-    palette=GreencolorsPalette,
-    data=df[df.color == "Green"],
+    kind="bar",
+    errorbar=("ci", 95),
+    n_boot=1000,
+    palette=GreencolorsPalette,  # Same color for both
+    height=10,  # Set the height of the figure
+    aspect=1.5,
     alpha=0.5,
+    capsize=0.1,
+    hue_order=["left", "right"],
+    legend=False,
 )
+
+# Add hatching to the right bars
+for i, bar in enumerate(g.ax.patches[len(g.ax.patches) // 2 :]):  # Second half of bars
+    bar.set_facecolor("none")  # Make bar empty
+    bar.set_hatch("///")  # Add diagonal lines
+    bar.set_edgecolor(GreencolorsPalette[1])  # Set edge color
+
 sns.stripplot(
     x="proba",
     y="aSPv",
@@ -769,19 +740,90 @@ sns.stripplot(
     dodge=True,
     jitter=True,
     size=8,
-    alpha=0.7,
+    # alpha=0.7,
     data=dd[dd.color == "Green"],
     legend=False,
 )
-plt.legend(fontsize=20)
-plt.title("Anticipatory Velocity Given Previous TD: color Green ", fontsize=30)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
-plt.xlabel("P(Left|Green)", fontsize=30)
-plt.xticks(fontsize=25)
-plt.yticks(fontsize=25)
-plt.ylim(-1, 1)
-plt.savefig(pathFig + "/aSPvGreenTD.svg")
+
+
+# Create custom legend
+
+legend_elements = [
+    Patch(facecolor=GreencolorsPalette[0], alpha=1, label="Left"),
+    Patch(
+        facecolor="none", hatch="///", label="Right", edgecolor=GreencolorsPalette[1]
+    ),
+]
+g.ax.legend(handles=legend_elements, fontsize=20)
+
+# Customize the plot
+g.ax.set_title("Anticipatory Velocity Given Previous TD: color Green ", fontsize=30)
+g.ax.set_ylabel("ASEM (deg/s)", fontsize=30)
+g.ax.set_xlabel(r"$\mathbb{P}$(Left|Green)", fontsize=30)
+g.ax.tick_params(labelsize=25)
+# g.ax.set_ylim(-1, 1)
+
+plt.tight_layout()
+plt.savefig(pathFig + "/aSPvGreenTD.svg", transparent=True)
 plt.show()
+# %%
+g = sns.catplot(
+    data=df[df.color == "Red"],
+    x="proba",
+    y="aSPv",
+    hue="TD_prev",
+    kind="bar",
+    errorbar=("ci", 95),
+    n_boot=1000,
+    palette=[RedcolorsPalette[1]],
+    height=10,  # Set the height of the figure
+    aspect=1.5,
+    alpha=0.7,
+    capsize=0.1,
+    hue_order=["left", "right"],
+    legend=False,
+)
+
+# Add hatching to the right bars
+for i, bar in enumerate(g.ax.patches[len(g.ax.patches) // 2 :]):  # Second half of bars
+    bar.set_facecolor("none")  # Make bar empty
+    bar.set_hatch("///")  # Add diagonal lines
+    bar.set_edgecolor(RedcolorsPalette[1])  # Set edge color
+
+sns.stripplot(
+    x="proba",
+    y="aSPv",
+    hue="TD_prev",
+    hue_order=["left", "right"],
+    palette=[RedcolorsPalette[1]],
+    dodge=True,
+    jitter=True,
+    size=8,
+    # alpha=0.7,
+    data=dd[dd.color == "Red"],
+    legend=False,
+)
+
+
+# Create custom legend
+
+legend_elements = [
+    Patch(facecolor=RedcolorsPalette[1], alpha=1, label="Left"),
+    Patch(facecolor="none", hatch="///", label="Right", edgecolor=RedcolorsPalette[1]),
+]
+g.ax.legend(handles=legend_elements, fontsize=20)
+
+# Customize the plot
+g.ax.set_title("Anticipatory Velocity Given Previous TD: Color Red ", fontsize=30)
+g.ax.set_ylabel("ASEM (deg/s)", fontsize=30)
+g.ax.set_xlabel(r"$\mathbb{P}$(Right|Red)", fontsize=30)
+g.ax.tick_params(labelsize=25)
+# g.ax.set_ylim(-1, 1)
+
+plt.tight_layout()
+plt.savefig(pathFig + "/aSPvRedTD.svg", transparent=True)
+plt.show()
+
 # %%
 df["interaction"] = list(zip(df["TD_prev"], df["color_prev"]))
 df_prime = df[
@@ -807,18 +849,29 @@ learningCurveInteraction = (
 df.columns
 # %%
 df_prime.groupby(["proba", "interaction", "color"]).count()[["aSPv"]]
-
 # %%
-learningCurveInteraction
+learningCurveInteraction["interaction"].unique()
 # %%
 # Cmap for Green and Red for the interaction plots
 
+df_prime["interaction"].unique()
+
+hue_order = [
+    ("left", "Green"),
+    ("left", "Red"),
+    ("right", "Green"),
+    ("right", "Red"),
+]
 # %%
 RedcolorsPalette = ["#e83865", "#cc3131"]
 GreencolorsPalette = ["#8cd790", "#285943"]
-colorsPalette = ["#285943", "#cc3131", "#e83865", "#8cd790"]
-# %%
-df_prime["interaction"].unique()
+# colorsPalette = ["#285943", "#cc3131", "#e83865", "#8cd790"]
+colorsPalette = [
+    GreencolorsPalette[0],
+    RedcolorsPalette[0],
+    GreencolorsPalette[1],
+    RedcolorsPalette[1],
+]
 # %%
 fig = plt.figure()
 # Toggle full screen mode
@@ -829,7 +882,7 @@ sns.barplot(
     y="aSPv",
     palette=colorsPalette,
     hue="interaction",
-    hue_order=df_prime["interaction"].unique(),
+    hue_order=hue_order,
     data=df_prime[df_prime.color == "Red"],
 )
 plt.title(
@@ -842,9 +895,185 @@ plt.yticks(fontsize=25)
 plt.ylim(-1.25, 1.25)
 plt.xlabel("P(Right|Red)", fontsize=30)
 plt.ylabel("ASEM(deg/s)", fontsize=30)
-plt.savefig(pathFig + "/aSPvRedInteraction.svg")
+plt.savefig(pathFig + "/aSPvRedInteraction.svg", transparent=True)
 plt.show()
 # %%
+# Create the base plot
+g = sns.catplot(
+    data=df_prime[df_prime.color == "Red"],
+    x="proba",
+    y="aSPv",
+    hue="interaction",
+    kind="bar",
+    errorbar=("ci", 95),
+    n_boot=1000,
+    palette=colorsPalette,
+    height=10,
+    aspect=1.5,
+    alpha=0.5,
+    capsize=0.1,
+    hue_order=[
+        ("left", "Green"),
+        ("left", "Red"),
+        ("right", "Green"),
+        ("right", "Red"),
+    ],
+    legend=False,
+)
+
+# Determine the number of bars per x-value
+n_categories = len(df_prime["interaction"].unique())
+n_x_values = len(df_prime["proba"].unique())
+total_bars = n_categories * n_x_values
+
+# Add hatching to the bars for 'right' categories
+for i, bar in enumerate(g.ax.patches):
+    # Determine if this bar represents a 'right' category
+    if i % n_categories >= n_categories // 2:  # Second half of bars for each x-value
+        bar.set_facecolor("none")  # Make bar empty
+        bar.set_hatch("///")  # Add diagonal lines
+        bar.set_edgecolor(colorsPalette[i // n_x_values])  # Maintain the category color
+
+# Add stripplot
+sns.stripplot(
+    x="proba",
+    y="aSPv",
+    hue="interaction",
+    hue_order=[
+        ("left", "Green"),
+        ("left", "Red"),
+        ("right", "Green"),
+        ("right", "Red"),
+    ],
+    palette=colorsPalette,
+    dodge=True,
+    jitter=True,
+    size=8,
+    data=learningCurveInteraction[learningCurveInteraction.color == "Red"],
+    # legend=False,
+)
+
+# # Create custom legend with all four categories
+legend_elements = [
+    # Left categories (solid fill)
+    Patch(facecolor=colorsPalette[0], alpha=1, label="Left, Green"),
+    Patch(facecolor=colorsPalette[1], alpha=1, label="Left, Red"),
+    # Right categories (hatched)
+    Patch(
+        facecolor="none",
+        hatch="///",
+        edgecolor=colorsPalette[2],
+        label="Right, Green",
+    ),
+    Patch(
+        facecolor="none",
+        hatch="///",
+        edgecolor=colorsPalette[3],
+        label="Right, Red",
+    ),
+]
+
+# Add the legend
+g.ax.legend(handles=legend_elements, fontsize=20)
+
+# Customize the plot
+g.ax.set_title("Anticipatory Velocity Given Previous TD: color Red", fontsize=30)
+g.ax.set_ylabel("ASEM (deg/s)", fontsize=30)
+g.ax.set_xlabel(r"$\mathbb{P}$(Left|Red)", fontsize=30)
+g.ax.tick_params(labelsize=25)
+
+plt.tight_layout()
+plt.savefig(pathFig + "/aSPvRedInteraction.svg", transparent=True)
+plt.show()
+# %%
+# Create the base plot
+g = sns.catplot(
+    data=df_prime[df_prime.color == "Red"],
+    x="proba",
+    y="aSPv",
+    hue="interaction",
+    kind="bar",
+    errorbar=("ci", 95),
+    n_boot=1000,
+    palette=colorsPalette,
+    height=10,
+    aspect=1.5,
+    alpha=0.5,
+    capsize=0.1,
+    hue_order=[
+        ("left", "Green"),
+        ("left", "Red"),
+        ("right", "Green"),
+        ("right", "Red"),
+    ],
+    legend=False,
+)
+
+# Get the number of categories and x-values
+n_categories = len(df_prime["interaction"].unique())
+n_x_values = len(df_prime["proba"].unique())
+
+# Add hatching to the bars for 'right' categories
+for prob_idx in range(n_x_values):  # For each probability value
+    for cat_idx in range(n_categories):  # For each category within that probability
+        bar_idx = prob_idx * n_categories + cat_idx  # Calculate the actual bar index
+        bar = g.ax.patches[bar_idx]
+
+        # Check if this is a "Right" category (3rd or 4th bar in each group)
+        if cat_idx >= 2:  # Right categories are in positions 2 and 3 within each group
+            bar.set_facecolor("none")
+            bar.set_hatch("///")
+            bar.set_edgecolor(colorsPalette[cat_idx])
+
+# Add stripplot
+sns.stripplot(
+    x="proba",
+    y="aSPv",
+    hue="interaction",
+    hue_order=[
+        ("left", "Green"),
+        ("left", "Red"),
+        ("right", "Green"),
+        ("right", "Red"),
+    ],
+    palette=colorsPalette,
+    dodge=True,
+    jitter=True,
+    size=8,
+    data=learningCurveInteraction[learningCurveInteraction.color == "Red"],
+)
+
+# Create custom legend
+legend_elements = [
+    # Left categories (solid fill)
+    Patch(facecolor=colorsPalette[0], alpha=1, label="Left, Green"),
+    Patch(facecolor=colorsPalette[1], alpha=1, label="Left, Red"),
+    # Right categories (hatched)
+    Patch(
+        facecolor="none",
+        hatch="///",
+        edgecolor=colorsPalette[2],
+        label="Right, Green",
+    ),
+    Patch(
+        facecolor="none",
+        hatch="///",
+        edgecolor=colorsPalette[3],
+        label="Right, Red",
+    ),
+]
+
+# Add the legend and customize the plot
+g.ax.legend(handles=legend_elements, fontsize=20)
+g.ax.set_title("Anticipatory Velocity Given Previous TD: color Red", fontsize=30)
+g.ax.set_ylabel("ASEM (deg/s)", fontsize=30)
+g.ax.set_xlabel(r"$\mathbb{P}$(Left|Red)", fontsize=30)
+g.ax.tick_params(labelsize=25)
+plt.tight_layout()
+plt.savefig(pathFig + "/aSPvRedInteraction.svg", transparent=True)
+plt.show()
+# %%
+
 fig = plt.figure()
 
 # Toggle full screen mode
@@ -876,7 +1105,7 @@ df.columns
 model = smf.mixedlm(
     "aSPv~  C(color,Treatment('Red'))*C(TD_prev)",
     data=df[df.proba == 0.25],
-    re_formula="~color",
+    # re_formula="~color",
     groups=df[df.proba == 0.25]["sub"],
 ).fit(method="lbfgs")
 model.summary()
@@ -892,7 +1121,7 @@ model.summary()
 model = smf.mixedlm(
     "aSPv~  C(color,Treatment('Red')) * C(TD_prev)",
     data=df[df.proba == 0.75],
-    re_formula="~color",
+    # re_formula="~color",
     groups=df[df.proba == 0.75]["sub"],
 ).fit(method="lbfgs")
 model.summary()
@@ -906,393 +1135,6 @@ model = smf.mixedlm(
 model.summary()
 # %%
 df.color_prev
-# %%
-# Sampling Bias analysis
-
-# Define transition counts for previous state = Green
-Green_transitions = (
-    df[df["color_prev"] == "Green"]
-    .groupby(["sub", "proba", "color"])["aSPv"]
-    .count()
-    .reset_index(name="count")
-)
-Green_transitions["total"] = Green_transitions.groupby(["sub", "proba"])[
-    "count"
-].transform("sum")
-
-Green_transitions["conditional_prob"] = (
-    Green_transitions["count"] / Green_transitions["total"]
-)
-
-Green_transitions = Green_transitions.rename(columns={"color": "current_state"})
-Green_transitions["previous_state"] = "Green"
-
-
-# Define transition counts for previous state = Red
-Red_transitions = (
-    df[df["color_prev"] == "Red"]
-    .groupby(["sub", "proba", "color"])["aSPv"]
-    .count()
-    .reset_index(name="count")
-)
-Red_transitions["total"] = Red_transitions.groupby(["sub", "proba"])["count"].transform(
-    "sum"
-)
-Red_transitions["conditional_prob"] = (
-    Red_transitions["count"] / Red_transitions["total"]
-)
-Red_transitions = Red_transitions.rename(columns={"color": "current_state"})
-Red_transitions["previous_state"] = "Red"
-# %%
-# Combine results
-conditional_probabilities = pd.concat([Green_transitions, Red_transitions])
-conditional_probabilities
-# %%
-conditional_probabilities["transition_state"] = list(
-    zip(
-        conditional_probabilities["current_state"],
-        conditional_probabilities["previous_state"],
-    )
-)
-
-conditional_probabilities["transition_state"] = conditional_probabilities[
-    "transition_state"
-].astype(str)
-conditional_probabilities
-
-
-# %%
-for s in conditional_probabilities["sub"].unique():
-    # Set up the FacetGrid
-    facet_grid = sns.FacetGrid(
-        data=conditional_probabilities[conditional_probabilities["sub"] == s],
-        col="proba",
-        col_wrap=3,
-        height=8,
-        aspect=1.5,
-    )
-
-    # Create barplots for each sub
-    facet_grid.map_dataframe(
-        sns.barplot,
-        x="transition_state",
-        y="conditional_prob",
-    )
-
-    # Adjust the layout to prevent title overlap
-    plt.subplots_adjust(top=0.85)  # Increases space above subplots
-
-    # Add a main title for the entire figure
-    facet_grid.figure.suptitle(f"Subject {s}", fontsize=16, y=0.98)
-
-    # Set titles for each subplot
-    for ax, p in zip(
-        facet_grid.axes.flat, np.sort(conditional_probabilities.proba.unique())
-    ):
-        ax.set_title(f"Sampling Bias p={p} : P(C(t+1)|C(t))")
-        ax.set_xlabel("Transition State")
-        ax.set_ylabel("Conditional probability")
-        # ax.tick_params(axis='x', rotation=45)
-
-    # Adjust spacing between subplots
-    facet_grid.figure.subplots_adjust(
-        wspace=0.2, hspace=0.3  # Slightly increased to provide more vertical space
-    )
-
-    # Show the plot
-    plt.show()
-
-
-# %%
-def classify_subject_behavior(conditional_probabilities):
-    # Create a function to categorize behavior for a single probability condition
-    def categorize_single_proba(group):
-        # Transition probabilities for this probability condition
-        if (
-            len(
-                group[group["transition_state"] == "('Green', 'Green')"][
-                    "conditional_prob"
-                ]
-            )
-            > 0
-        ):
-            Green_to_Green = group[group["transition_state"] == "('Green', 'Green')"][
-                "conditional_prob"
-            ].values[0]
-        else:
-            Green_to_Green = 0
-
-        if (
-            len(
-                group[group["transition_state"] == "('Red', 'Red')"]["conditional_prob"]
-            )
-            > 0
-        ):
-            Red_to_Red = group[group["transition_state"] == "('Red', 'Red')"][
-                "conditional_prob"
-            ].values[0]
-        else:
-            Red_to_Red = 0
-
-        if (
-            len(
-                group[group["transition_state"] == "('Red', 'Green')"][
-                    "conditional_prob"
-                ]
-            )
-            > 0
-        ):
-            Green_to_Red = group[group["transition_state"] == "('Red', 'Green')"][
-                "conditional_prob"
-            ].values[0]
-        else:
-            Green_to_Red = 0
-
-        if len(
-            group[group["transition_state"] == "('Green', 'Red')"]["conditional_prob"]
-        ):
-
-            Red_to_Green = group[group["transition_state"] == "('Green', 'Red')"][
-                "conditional_prob"
-            ].values[0]
-        else:
-            Red_to_Green = 0
-
-        # Persistent: high probability of staying in the same state
-        if Green_to_Green > 0.6 and Red_to_Red > 0.6:
-            return "Persistent"
-
-        # Alternating: high probability of switching states
-        if Green_to_Red > 0.6 and Red_to_Green > 0.6:
-            return "Alternating"
-
-        return "Random"
-
-    # Classify behavior for each subject and probability
-    subject_proba_behavior = (
-        conditional_probabilities.groupby(["sub", "proba"])
-        .apply(lambda x: categorize_single_proba(x))
-        .reset_index(name="behavior")
-    )
-    print(subject_proba_behavior)
-
-    # Count behaviors for each subject across probabilities
-    behavior_counts = (
-        subject_proba_behavior.groupby(["sub", "behavior"]).size().unstack(fill_value=0)
-    )
-
-    # Classify subject based on behavior consistency across at least two probabilities
-    def final_classification(row):
-        if row["Persistent"] >= 2:
-            return "Persistent"
-        elif row["Alternating"] >= 2:
-            return "Alternating"
-        else:
-            return "Random"
-
-    subject_classification = behavior_counts.apply(
-        final_classification, axis=1
-    ).reset_index()
-    subject_classification.columns = ["sub", "behavior_class"]
-
-    # Visualize classification
-    plt.figure(figsize=(10, 6))
-    behavior_counts = subject_classification["behavior_class"].value_counts()
-    plt.pie(behavior_counts, labels=behavior_counts.index, autopct="%1.1f%%")
-    plt.title("Subject Behavior Classification\n(Consistent Across probabilities)")
-    plt.show()
-
-    # Print detailed results
-    print(subject_classification)
-
-    # Additional detailed view
-    detailed_behavior = subject_proba_behavior.pivot_table(
-        index="sub", columns="proba", values="behavior", aggfunc="first"
-    )
-    print("\nDetailed Behavior Across probabilities:")
-    print(detailed_behavior)
-
-    return subject_classification
-
-
-subject_classification = classify_subject_behavior(conditional_probabilities)
-# %%
-subject_classification
-
-# %%
-# Perform classification
-# Optional: Create a more detailed summary
-summary = subject_classification.groupby("behavior_class").size()
-print("\nBehavior Classification Summary:")
-print(summary)
-# %%
-dd = df.groupby(["sub", "proba", "color"])["aSPv"].mean().reset_index()
-# %%
-for s in dd["sub"].unique():
-    behavior_value = subject_classification[subject_classification["sub"] == s][
-        "behavior_class"
-    ].values[0]
-    dd.loc[dd["sub"] == s, "behavior"] = behavior_value
-
-# %%
-dd
-# %%
-sns.lmplot(
-    data=dd[(dd["color"] == "Green")],
-    x="proba",
-    y="aSPv",
-    hue="behavior",
-)
-plt.show()
-# %%
-sns.lmplot(
-    data=dd[(dd["color"] == "Red")],
-    x="proba",
-    y="aSPv",
-    hue="behavior",
-)
-plt.show()
-
-# %%
-dd
-# %%
-# Computing the peristance score based on the transition probabilites
-# One should expect a U shape fit here
-for p in df["proba"].unique():
-    ddp = dd[dd["proba"] == p].copy()
-    sns.regplot(
-        data=ddp,
-        x=ddp[ddp["color"] == "Green"]["aSPv"].values,
-        y=ddp[ddp["color"] == "Red"]["aSPv"].values,
-    )
-    plt.ylabel("adaptation_Red", fontsize=20)
-    plt.xlabel("adaptation_Green", fontsize=20)
-    plt.title(f"proba={p}")
-    plt.xticks(fontsize=15)
-    plt.yticks(fontsize=15)
-    plt.show()
-# %%
-conditional_probabilities
-# %%
-dd = (
-    conditional_probabilities.groupby(["sub", "transition_state", "proba"])[
-        "conditional_prob"
-    ]
-    .mean()
-    .reset_index()
-)
-dd
-# %%
-dd["sub"].value_counts()
-# %%
-ts = dd["transition_state"].unique()
-new_rows = []
-for s in dd["sub"].unique():
-    for p in dd[dd["sub"] == s]["proba"].unique():
-        existing_ts = dd[(dd["sub"] == s) & (dd["proba"] == p)][
-            "transition_state"
-        ].unique()
-        for t in ts:
-            if t not in existing_ts:
-                # Add a new row with sub = s and transition_state = t, setting transition_state to 0
-                new_row = {
-                    "sub": s,
-                    "proba": p,
-                    "transition_state": t,
-                    "conditional_prob": 0,
-                }
-                new_rows.append(new_row)
-
-# Concatenate the new rows to the original DataFrame
-dd = pd.concat([dd, pd.DataFrame(new_rows)], ignore_index=True)
-
-print(dd)
-# %%
-
-dd = (
-    dd.groupby(["sub", "proba", "transition_state"])["conditional_prob"]
-    .mean()
-    .reset_index()
-)
-dd
-# %%
-dd["transition_state"].unique()
-
-# %%
-dd["sub"].value_counts()
-
-
-# %%
-# Function to classify transition_state as persistent or alternating
-def classify_transition(state):
-    return (
-        "persistent"
-        if state == "('Red', 'Red')" or state == "('Green', 'Green')"
-        else "alternating"
-    )
-
-
-# Apply the classification function
-dd["transition_type"] = dd["transition_state"].apply(classify_transition)
-dd
-# %%
-adaptation = (
-    dd.groupby(["sub", "transition_type"])["conditional_prob"].mean().reset_index()
-)
-adaptation
-# %%
-# Group by 'sub' and calculate the score
-result = pd.DataFrame()
-result["sub"] = df["sub"].unique()
-# %%
-result["persistence_score"] = (
-    adaptation[adaptation["transition_type"] == "persistent"]["conditional_prob"].values
-    - adaptation[adaptation["transition_type"] == "alternating"][
-        "conditional_prob"
-    ].values
-)
-result
-# %%
-dd["transition_state"].unique()
-# %%
-result["persistence_score_Red"] = np.nan
-result["persistence_score_Green"] = np.nan
-result
-# %%
-dd
-# %%
-
-for s in dd["sub"].unique():
-    Red_Red_prob = np.mean(
-        dd[(dd["sub"] == s) & (dd["transition_state"] == "('Red', 'Red')")][
-            "conditional_prob"
-        ]
-    )
-    Green_Red_prob = np.mean(
-        dd[(dd["sub"] == s) & (dd["transition_state"] == "('Green', 'Red')")][
-            "conditional_prob"
-        ]
-    )
-
-    result.loc[result["sub"] == s, "persistence_score_Red"] = (
-        Red_Red_prob - Green_Red_prob
-    )
-
-    Green_Green_prob = np.mean(
-        dd[(dd["sub"] == s) & (dd["transition_state"] == "('Green', 'Green')")][
-            "conditional_prob"
-        ]
-    )
-
-    Red_Green_prob = np.mean(
-        dd[(dd["sub"] == s) & (dd["transition_state"] == "('Red', 'Green')")][
-            "conditional_prob"
-        ]
-    )
-    result.loc[result["sub"] == s, "persistence_score_Green"] = (
-        Green_Green_prob - Red_Green_prob
-    )
-result
 # %%
 
 # Group by 'sub', 'proba', and 'color' and calculate the mean of 'aSPv'
@@ -1317,146 +1159,6 @@ adaptation = pivot_table[["sub", "color", "adaptation"]]
 print(adaptation)
 # %%
 
-result["adaptation"] = adaptation.groupby("sub")["adaptation"].mean().values
-result["adaptation_Green"] = adaptation[adaptation["color"] == "Green"][
-    "adaptation"
-].values
-result["adaptation_Red"] = adaptation[adaptation["color"] == "Red"]["adaptation"].values
-# %%
-result = pd.DataFrame(result)
-result
-# %%
-sns.lmplot(data=result, x="persistence_score", y="adaptation", height=10)
-plt.ylabel("adaptation", fontsize=20)
-plt.xlabel("persistence_score", fontsize=20)
-plt.xticks(fontsize=15)
-plt.yticks(fontsize=15)
-plt.savefig(pathFig + "/samplingBiasColours.svg")
-plt.show()
-# %%
-sns.lmplot(
-    data=result,
-    x="persistence_score_Green",
-    y="adaptation_Green",
-    height=10,
-    scatter_kws={"color": "seaGreen"},
-    line_kws={"color": "seaGreen"},
-)
-plt.ylabel("adaptation_Green", fontsize=20)
-plt.xlabel("persistence_score", fontsize=20)
-plt.xticks(fontsize=15)
-plt.yticks(fontsize=15)
-plt.savefig(pathFig + "/samplingBiasGreen.svg")
-plt.show()
-# %%
-
-sns.lmplot(
-    data=result,
-    x="persistence_score_Red",
-    y="adaptation_Red",
-    height=10,
-    scatter_kws={"color": "salmon"},
-    line_kws={"color": "salmon"},
-)
-plt.ylabel("adaptation_Red", fontsize=20)
-plt.xlabel("persistence_score", fontsize=20)
-plt.xticks(fontsize=15)
-plt.yticks(fontsize=15)
-plt.savefig(pathFig + "/samplingBiasRed.svg")
-plt.show()
-# %%
-sns.lmplot(data=result, x="adaptation_Green", y="adaptation_Red")
-plt.show()
-# %%
-correlation, p_value = spearmanr(result["adaptation_Green"], result["adaptation_Red"])
-print(
-    f"Spearman's correlation adaptation red vs green: {correlation}, p-value: {p_value}"
-)
-# %%
-sns.scatterplot(
-    data=result,
-    x="adaptation_Green",
-    y="adaptation_Red",
-    hue="sub",
-    s=100,
-    palette="tab20",
-)
-plt.show()
-# %%
-
-sns.lmplot(
-    data=result,
-    x="persistence_score_Green",
-    y="persistence_score_Red",
-)
-plt.show()
-
-# %%
-
-correlation, p_value = spearmanr(
-    result["persistence_score"],
-    result["adaptation"],
-)
-print(
-    f"Spearman's correlation for the adaptation score: {correlation}, p-value: {p_value}"
-)
-
-# %%
-correlation, p_value = spearmanr(
-    result["persistence_score_Green"],
-    result["adaptation_Green"],
-)
-print(
-    f"Spearman's correlation for the adaptation score for Green: {correlation}, p-value: {p_value}"
-)
-
-# %%
-correlation, p_value = spearmanr(
-    result["persistence_score_Red"],
-    result["adaptation_Red"],
-)
-print(
-    f"Spearman's correlation for the adaptation score for Red: {correlation}, p-value: {p_value}"
-)
-
-# %%
-correlation, p_value = spearmanr(
-    result["adaptation_Green"],
-    result["adaptation_Red"],
-)
-print(
-    f"Spearman's correlation for the adaptation score for Red): {correlation}, p-value: {p_value}"
-)
-
-# %%
-
-correlation, p_value = spearmanr(
-    result["persistence_score_Red"],
-    result["persistence_score_Green"],
-)
-print(
-    f"Spearman's correlation for the adaptation score for Red): {correlation}, p-value: {p_value}"
-)
-
-# %%
-model = sm.OLS.from_formula("adaptation_Red~ persistence_score_Red ", result).fit()
-
-print(model.summary())
-# %%
-model = sm.OLS.from_formula("adaptation_Green~ persistence_score_Green ", result).fit()
-
-print(model.summary())
-# %%
-
-model = sm.OLS.from_formula("adaptation_Red~ adaptation_Green ", result).fit()
-
-print(model.summary())
-# %%
-df.columns
-# %%
-df.groupby(["sub", "proba", "color", "trialTgUP", "TD_prev"])[
-    "aSPv"
-].mean().reset_index()
 # %%
 # Group by 'sub', 'proba', and 'color' and calculate the mean of 'aSPv'
 mean_velo = df.groupby(["sub", "proba", "color"])["aSPv"].mean().reset_index()
@@ -1490,7 +1192,7 @@ plt.show()
 sns.boxplot(
     data=pivot_table,
     x="proba",
-    y="Green",
+    y="Red",
 )
 plt.show()
 # %%
