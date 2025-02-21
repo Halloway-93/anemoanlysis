@@ -12,15 +12,25 @@ import statsmodels.api as sm
 from statsmodels.formula.api import ols
 import numpy as np
 from matplotlib.patches import Patch
+import os
 
 # %%
 pathFig = "/Users/mango/Contextual-Learning/attentionTask/figures/"
 df = pd.read_csv("/Users/mango/anemoanlysis/LMM/dataANEMO_allSubs_attentionColorCP.csv")
+main_dir = "/Users/mango/oueld.h/attentionalTask/data/"
+df = df[(df["sub"] != "sub-10")]
 print(df)
 # %%
 df.rename(columns={"pR-Red": "proba"}, inplace=True)
 df.rename(columns={"trial_color": "color"}, inplace=True)
 print(df["sub"].unique())
+df["sub"] = [int(x.split("-")[1]) for x in df["sub"]]
+# %%
+allEvents = pd.read_csv(os.path.join(main_dir, "allEvents.csv"))
+# To align anemo data that start at trial 0
+allEvents["trial"] = allEvents["trial"].values - 1
+allEvents["proba"] = allEvents["proba"].values / 100
+allEvents
 # %%
 df = df[(df["sub"] != "sub-10")]
 df["aSPoff"]
@@ -39,12 +49,30 @@ plt.show()
 # %%
 for sub in df["sub"].unique():
     for p in df[df["sub"] == sub]["proba"].unique():
-        df.loc[(df["sub"] == sub) & (df["proba"] == p), "TD_prev"] = df.loc[
-            (df["sub"] == sub) & (df["proba"] == p), "target_dir"
-        ].shift(1)
-        df.loc[(df["sub"] == sub) & (df["proba"] == p), "color_prev"] = df.loc[
-            (df["sub"] == sub) & (df["proba"] == p), "color"
-        ].shift(1)
+        for t in df[(df["sub"] == sub) & (df["proba"] == p)]["trial"].unique():
+
+            # Check if the previous trial exists in allEvents
+            prev_trial = allEvents.loc[
+                (allEvents["sub"] == sub)
+                & (allEvents["proba"] == p)
+                & (allEvents["trial"] == t - 1)
+            ]
+            if prev_trial.empty:
+                print(df[df["trial"] == t]["trial"])
+
+            if not prev_trial.empty:  # Ensure the previous trial exists
+                # Assign trial direction from previous trial
+                df.loc[
+                    (df["sub"] == sub) & (df["proba"] == p) & (df["trial"] == t),
+                    "TD_prev",
+                ] = prev_trial["trial_direction"].values[0]
+
+                # print(prev_trial["trial_color_chosen"].values[0])
+                # Assign color from previous trial
+                df.loc[
+                    (df["sub"] == sub) & (df["proba"] == p) & (df["trial"] == t),
+                    "color_prev",
+                ] = prev_trial["trial_color_imposed"].values[0]
 # %%
 df.columns
 df[(df["TD_prev"].isna())]

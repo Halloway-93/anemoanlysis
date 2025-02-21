@@ -57,8 +57,6 @@ for sub in df["sub"].unique():
                 & (allEvents["proba"] == p)
                 & (allEvents["trial"] == t - 1)
             ]
-            if prev_trial.empty:
-                print(df[df["trial"] == t]["trial"])
 
             if not prev_trial.empty:  # Ensure the previous trial exists
                 # Assign trial direction from previous trial
@@ -84,7 +82,7 @@ df[df["TD_prev"].isna()]
 df["TD_prev"] = df["TD_prev"].apply(lambda x: "right" if x == 1 else "left")
 df["interaction"] = list(zip(df["TD_prev"], df["arrow_prev"]))
 # %%
-df[df["aSPv"] == df["aSPv"].max()]["arrow"]
+df[df["aSPv"] == df["aSPv"].max()]["aSPv"]
 # %%
 sns.histplot(data=df, x="aSPv")
 plt.show()
@@ -184,6 +182,12 @@ facet_grid.figure.subplots_adjust(
 # Show the plot
 plt.show()
 
+# %%
+df1 = df[(df["session"] == "session-04") & ((df["proba"] == 1))]
+df1
+# %%
+df2 = df[(df["session"] == "session-04") & ((df["proba"] == 0))]
+df2
 # %%
 fig = plt.figure()
 # Toggle full screen mode
@@ -307,7 +311,7 @@ model = smf.mixedlm(
     groups=df[df.proba == 0.25]["sub"],
 ).fit()
 model.summary()
-# a %%
+# %%
 model = smf.mixedlm(
     "aSPv~C( arrow,Treatment('up') )",
     data=df[df.proba == 0.5],
@@ -319,7 +323,7 @@ model.summary()
 
 # %%
 model = smf.mixedlm(
-    "aSPv~ C(proba,Treatment(0.5))",
+    "aSPv~ proba",
     data=df[df.arrow == "up"],
     re_formula="~proba",
     groups=df[df.arrow == "up"]["sub"],
@@ -328,7 +332,7 @@ model.summary()
 
 # %%
 model = smf.mixedlm(
-    "aSPv~ C(proba,Treatment(0.5))",
+    "aSPv~ proba",
     data=df[df.arrow == "down"],
     re_formula="~proba",
     groups=df[df.arrow == "down"]["sub"],
@@ -1006,7 +1010,7 @@ plt.show()
 model = smf.mixedlm(
     "aSPv~C( arrow )",
     data=df[df.proba == 0.75],
-    re_formula="~arrow",
+    # re_formula="~arrow",
     groups=df[df.proba == 0.75]["sub"],
 ).fit(method=["lbfgs"])
 model.summary()
@@ -1023,7 +1027,7 @@ model.summary()
 model = smf.mixedlm(
     "aSPv~C( arrow )",
     data=df[df.proba == 0.5],
-    # re_formula="~arrow",
+    re_formula="~arrow",
     groups=df[df.proba == 0.5]["sub"],
 ).fit()
 model.summary()
@@ -1088,6 +1092,7 @@ sns.stripplot(
     # alpha=0.5,
     legend=False,
 )
+plt.savefig(pathFig + "/aSPvarrows.svg", transparent=True)
 plt.show()
 # %%
 df_prime = df[

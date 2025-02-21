@@ -17,7 +17,7 @@ import os
 # %%
 pathFig = "/Users/mango/Contextual-Learning/ColorCue/figures/imposedColor/"
 df = pd.read_csv("/Users/mango/anemoanlysis/LMM/dataANEMO_allSubs_passiveColorCP.csv")
-main_dir = "/Users/mango/oueld.h/contextuaLearning/ColorCue/imposedColorData/"
+main_dir = "/Users/mango/oueld.h/attentionalTask/data/"
 print(df)
 # %%
 df.rename(columns={"pR-Red": "proba"}, inplace=True)

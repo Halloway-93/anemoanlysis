@@ -870,7 +870,6 @@ plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
 plt.ylabel("ASEM (deg/s)", fontsize=30)
 plt.legend(fontsize=20)
-plt.savefig(pathFig + "/aSPvarrows.svg", transparent=True)
 
 sns.stripplot(
     x="proba",
@@ -884,6 +883,7 @@ sns.stripplot(
     # alpha=0.5,
     legend=False,
 )
+plt.savefig(pathFig + "/aSPvarrows.svg", transparent=True)
 plt.show()
 # %%
 df_prime = df[

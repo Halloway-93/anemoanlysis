@@ -28,6 +28,7 @@ df.rename(columns={"trial_color": "color"}, inplace=True)
 print(df["sub"].unique())
 # %%
 df["sub"] = [int(x.split("-")[1]) for x in df["sub"]]
+df["sub"].unique()
 # %%
 df.columns
 # %%
@@ -48,9 +49,26 @@ allEvents["trial_color_chosen"] = allEvents["trial_color_chosen"].apply(
 )
 df.rename(columns={"trial_color_UP": "trialTgUP"}, inplace=True)
 # %%
-
-df.columns
-
+for s in df["sub"].unique():
+    l1 = len(
+        df[
+            (df["proba"] == 0.25)
+            & (df["color"] == "Red")
+            & (df["sub"] == s)
+            & (df["aSPv"] > 0)
+        ]
+    )
+    l2 = len(
+        df[
+            (df["proba"] == 0.25)
+            & (df["color"] == "Red")
+            & (df["sub"] == s)
+            & (df["aSPv"] < 0)
+        ]
+    )
+    print(
+        f" Subject{s}, Ratio of probability matching color green P=0.25: {l1/(l1+l2)}"
+    )
 # %%
 sns.histplot(data=df, x="aSPv")
 plt.show()
@@ -93,8 +111,12 @@ for sub in df["sub"].unique():
                     "color_prev",
                 ] = prev_trial["trial_color_chosen"].values[0]
 # %%
-df.columns
+df
+# %%
 df[(df["TD_prev"].isna())]
+
+# %%
+df["sub"]
 # %%
 df = df[~(df["TD_prev"].isna())]
 # %%
@@ -110,10 +132,12 @@ df.columns
 # %%
 colors = ["Green", "Red"]
 # %%
+df["sub"]
+# %%
 # dd = df.groupby(["sub", "color", "proba", "TD_prev"])[["aSPv"]].mean().reset_index()
 dd = df.groupby(["sub", "color", "proba"])[["aSPv"]].mean().reset_index()
 
-dd
+dd["sub"].unique()
 # %%
 np.abs(dd.aSPv.values).max()
 # %%
@@ -298,6 +322,22 @@ result = model.fit()
 print(result.summary())
 # %%
 colors = ["Green", "Red"]
+for s in df["sub"].unique():
+    print(s)
+    sns.displot(
+        data=df[(df.proba == 0.25) & (df["sub"] == s)],
+        x="aSPv",
+        hue="color",
+        hue_order=colors,
+        alpha=0.5,
+        # element="step",
+        kind="kde",
+        fill=True,
+        # multiple="dodge",
+        palette=colors,
+    )
+    plt.show()
+# %%
 sns.displot(
     data=df[df.proba == 0.75],
     x="aSPv",
@@ -520,10 +560,12 @@ sns.catplot(
     hue_order=colors,
     kind="violin",
     split=True,
-    palette=colors,
+    palette=[GreencolorsPalette[1], RedcolorsPalette[1]],
+    inner="quart",
+    fill=False,
 )
-plt.show()
 plt.savefig(pathFig + "/aSPvAcrossprobaviolin.svg", transparent=True)
+plt.show()
 # %%
 dd
 # %%
@@ -548,6 +590,120 @@ plt.yticks(fontsize=25)
 plt.ylabel("ASEM (deg/s)", fontsize=30)
 plt.savefig(pathFig + "/individualsRed.svg", transparent=True)
 plt.show()
+# %%
+sns.lmplot(
+    data=dd[dd.color == "Red"],
+    x="proba",
+    y="aSPv",
+    hue="sub",
+    palette="tab20",
+    height=10,
+)
+# _ = plt.title("ASEM Per Subject: color Red", fontsize=30)
+# plt.legend(fontsize=20)
+plt.xlabel(r"$\mathbb{P}$(Right|Red)", fontsize=30)
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+plt.ylabel("ASEM (deg/s)", fontsize=30)
+plt.savefig(pathFig + "/individualsRedlm.svg", transparent=True)
+plt.show()
+# %%
+sns.lmplot(
+    data=dd[dd.color == "Green"],
+    x="proba",
+    y="aSPv",
+    hue="sub",
+    palette="tab20",
+    height=10,
+)
+# _ = plt.title("ASEM Per Subject: color Red", fontsize=30)
+# plt.legend(fontsize=20)
+plt.xlabel(r"$\mathbb{P}$(Left|Green)", fontsize=30)
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+plt.ylabel("ASEM (deg/s)", fontsize=30)
+plt.savefig(pathFig + "/individualsGreenlm.svg", transparent=True)
+plt.show()
+# %%
+fig = plt.figure()
+# Toggle full screen mode
+figManager = plt.get_current_fig_manager()
+figManager.full_screen_toggle()
+
+# Get the points for probability 0.25
+green_25 = dd[(dd["color"] == "Green") & (dd["proba"] == 0.25)]["aSPv"].values
+red_25 = dd[(dd["color"] == "Red") & (dd["proba"] == 0.25)]["aSPv"].values
+
+# Get the points for probability 0.75
+green_75 = dd[(dd["color"] == "Green") & (dd["proba"] == 0.75)]["aSPv"].values
+red_75 = dd[(dd["color"] == "Red") & (dd["proba"] == 0.75)]["aSPv"].values
+
+# Plot the scatter points
+plt.scatter(green_25, red_25, label="proba=0.25")
+plt.scatter(green_75, red_75, label="proba=0.75")
+
+# Add connecting lines between corresponding points
+for i in range(len(green_25)):
+    plt.plot(
+        [green_25[i], green_75[i]],
+        [red_25[i], red_75[i]],
+        color="gray",
+        alpha=0.3,
+        linestyle="-",
+    )
+
+plt.axhline(y=0, color="k", linestyle="--")  # Horizontal line at y=0
+plt.axvline(x=0, color="k", linestyle="--")  # Vertical line at x=0
+plt.xlabel(r"aSPv Color Green", fontsize=30)
+plt.ylabel(r"aSPv Color Red", fontsize=30)
+plt.legend()
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+plt.show()
+# %%
+fig = plt.figure()
+# Toggle full screen mode
+figManager = plt.get_current_fig_manager()
+figManager.full_screen_toggle()
+
+# Get the points for probability 0.25
+green_25 = dd[(dd["color"] == "Green") & (dd["proba"] == 0.25)]["aSPv"].values
+red_25 = dd[(dd["color"] == "Red") & (dd["proba"] == 0.25)]["aSPv"].values
+
+# Get the points for probability 0.75
+green_75 = dd[(dd["color"] == "Green") & (dd["proba"] == 0.75)]["aSPv"].values
+red_75 = dd[(dd["color"] == "Red") & (dd["proba"] == 0.75)]["aSPv"].values
+
+# Plot the scatter points
+plt.scatter(green_25, red_25, label="proba=0.25")
+plt.scatter(green_75, red_75, label="proba=0.75")
+
+# Add connecting lines between corresponding points and index labels
+for i in range(len(green_25)):
+    # Draw the line
+    plt.plot(
+        [green_25[i], green_75[i]],
+        [red_25[i], red_75[i]],
+        color="gray",
+        alpha=0.3,
+        linestyle="-",
+    )
+
+    # Add index number at the middle of the line
+    mid_x = (green_25[i] + green_75[i]) / 2
+    mid_y = (red_25[i] + red_75[i]) / 2
+    plt.annotate(str(i + 1), (mid_x, mid_y), fontsize=12)
+
+plt.axhline(y=0, color="k", linestyle="--")  # Horizontal line at y=0
+plt.axvline(x=0, color="k", linestyle="--")  # Vertical line at x=0
+plt.xlabel(r"aSPv Color Green", fontsize=30)
+plt.ylabel(r"aSPv Color Red", fontsize=30)
+plt.legend()
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+plt.show()
+# %%
+dd
 # %%
 fig = plt.figure()
 # Toggle full screen mode
@@ -584,7 +740,7 @@ anova_results = pg.rm_anova(
 print(anova_results)
 # %%
 model = smf.mixedlm(
-    "aSPv~C(proba,Treatment(0.5))*color",
+    "aSPv~proba*color",
     data=df,
     re_formula="~proba*color",
     groups=df["sub"],
@@ -617,7 +773,7 @@ normaltest_result = stats.normaltest(residuals)
 print(f"D'Agostino's K^2 test p-value: {normaltest_result.pvalue:.4f}")
 # %%
 model = smf.mixedlm(
-    "aSPv~C(proba,Treatment(0.5))",
+    "aSPv~proba",
     data=df[df.color == "Red"],
     re_formula="~proba",
     groups=df[df.color == "Red"]["sub"],
@@ -626,7 +782,7 @@ model.summary()
 
 # %%
 model = smf.mixedlm(
-    "aSPv~C(proba,Treatment(0.5))",
+    "aSPv~proba",
     data=df[df.color == "Green"],
     re_formula="~proba",
     groups=df[df.color == "Green"]["sub"],
@@ -654,7 +810,7 @@ normaltest_result = stats.normaltest(residuals)
 print(f"D'Agostino's K^2 test p-value: {normaltest_result.pvalue:.4f}")
 # %%
 model = smf.mixedlm(
-    "aSPv~ C(color)",
+    "aSPv~ color",
     data=df[df.proba == 0.25],
     re_formula="~color",
     groups=df[df.proba == 0.25]["sub"],
@@ -677,7 +833,7 @@ normaltest_result = stats.normaltest(residuals)
 print(f"D'Agostino's K^2 test p-value: {normaltest_result.pvalue:.4f}")
 # %%
 model = smf.mixedlm(
-    "aSPv~ C(color)",
+    "aSPv~ color",
     data=df[df.proba == 0.50],
     re_formula="~color",
     groups=df[df.proba == 0.50]["sub"],
@@ -718,7 +874,7 @@ sns.stripplot(
     dodge=True,
     palette=[GreencolorsPalette[1], RedcolorsPalette[1]],
     jitter=True,
-    size=8,
+    size=4,
     # alpha=0.5,
     legend=False,
 )
@@ -734,6 +890,44 @@ plt.ylabel("ASEM (deg/s)", fontsize=30)
 plt.savefig(pathFig + "/aSPvcolors.svg", transparent=True)
 plt.show()
 
+# %%
+
+figManager = plt.get_current_fig_manager()
+figManager.full_screen_toggle()
+sns.boxplot(
+    x="proba",
+    y="aSPv",
+    hue="color",
+    # errorbar="ci",
+    palette=[GreencolorsPalette[1], RedcolorsPalette[1]],
+    hue_order=colors,
+    fill=False,
+    data=dd,
+    # alpha=0.5,
+)
+sns.stripplot(
+    x="proba",
+    y="aSPv",
+    hue="color",
+    data=dd,
+    dodge=True,
+    palette=[GreencolorsPalette[1], RedcolorsPalette[1]],
+    jitter=True,
+    size=6,
+    # alpha=0.5,
+    legend=False,
+)
+
+plt.legend(fontsize=20)
+# plt.title("ASEM across 3 different probabilites", fontsize=30)
+plt.xlabel(r"$\mathbb{P}$(Right|Red)=$\mathbb{P}$(Left|Green)", fontsize=30)
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+# plt.ylim(-0.75, 0.75)
+plt.legend(fontsize=20)
+plt.ylabel("ASEM (deg/s)", fontsize=30)
+plt.savefig(pathFig + "/aSPvcolorsbp.svg", transparent=True)
+plt.show()
 # %%
 df_prime = df[
     [
@@ -862,10 +1056,11 @@ g = sns.catplot(
     palette=[RedcolorsPalette[1]],  # Same color for both
     height=10,  # Set the height of the figure
     aspect=1.5,
-    alpha=0.7,
+    alpha=1,
     capsize=0.1,
     hue_order=["left", "right"],
     legend=False,
+    # zorder=2,
 )
 
 # Add hatching to the right bars
@@ -879,13 +1074,18 @@ sns.stripplot(
     y="aSPv",
     hue="TD_prev",
     hue_order=["left", "right"],
-    palette=[RedcolorsPalette[1]],  # Same color for both
+    palette=["white"],  # Set the color to gray
     dodge=True,
     jitter=True,
-    size=8,
-    # alpha=0.7,
+    size=6,
+    linewidth=1,
+    marker="o",
+    edgecolor="gray",
+    facecolor="none",
+    alpha=0.7,  # You can adjust the transparency if needed
     data=dd[dd.color == "Red"],
     legend=False,
+    # zorder=1,
 )
 
 
@@ -930,6 +1130,8 @@ learningCurveInteraction = (
 )
 
 # %%
+learningCurveInteraction
+# %%
 df_prime.groupby(["proba", "interaction", "color"]).count()[["aSPv"]]
 # %%
 learningCurveInteraction["interaction"].unique()
@@ -945,42 +1147,15 @@ hue_order = [
     ("right", "red"),
 ]
 # %%
-hue_order[0][0]
-# %%
 RedcolorsPalette = ["#e83865", "#cc3131"]
 GreencolorsPalette = ["#8cd790", "#285943"]
 # colorsPalette = ["#285943", "#cc3131", "#e83865", "#8cd790"]
 colorsPalette = [
-    GreencolorsPalette[0],
-    RedcolorsPalette[0],
+    GreencolorsPalette[1],
+    RedcolorsPalette[1],
     GreencolorsPalette[1],
     RedcolorsPalette[1],
 ]
-# %%
-fig = plt.figure()
-# Toggle full screen mode
-figManager = plt.get_current_fig_manager()
-figManager.full_screen_toggle()
-sns.barplot(
-    x="proba",
-    y="aSPv",
-    palette=colorsPalette,
-    hue="interaction",
-    hue_order=hue_order,
-    data=df_prime[df_prime.color == "Red"],
-)
-plt.title(
-    "Red Trials\n (Previous Target Direction & color Chosen)",
-    fontsize=30,
-)
-plt.legend(fontsize=20)
-plt.xticks(fontsize=25)
-plt.yticks(fontsize=25)
-plt.ylim(-1.25, 1.25)
-plt.xlabel(r"$\mathbb{P}$(Right|Red)", fontsize=30)
-plt.ylabel("ASEM(deg/s)", fontsize=30)
-plt.savefig(pathFig + "/aSPvRedInteraction.svg", transparent=True)
-plt.show()
 # %%
 # Create the base plot
 g = sns.catplot(
@@ -994,7 +1169,7 @@ g = sns.catplot(
     palette=colorsPalette,
     height=10,
     aspect=1.5,
-    alpha=0.5,
+    alpha=0.7,
     capsize=0.1,
     hue_order=hue_order,
     legend=False,
@@ -1008,7 +1183,85 @@ total_bars = n_categories * n_x_values
 # Add hatching to the bars for 'right' categories
 for i, bar in enumerate(g.ax.patches):
     # Determine if this bar represents a 'right' category
-    if i % n_categories >= n_categories // 2:  # Second half of bars for each x-value
+    if i > 5:  # Second half of bars for each x-value
+        bar.set_facecolor("none")  # Make bar empty
+        bar.set_hatch("///")  # Add diagonal lines
+        bar.set_edgecolor(colorsPalette[i // n_x_values])  # Maintain the category color
+
+# Add stripplot
+sns.stripplot(
+    x="proba",
+    y="aSPv",
+    hue="interaction",
+    hue_order=hue_order,
+    palette=colorsPalette,
+    dodge=True,
+    jitter=True,
+    size=6,
+    data=learningCurveInteraction[learningCurveInteraction.color == "Red"],
+    # legend=False,
+)
+#
+# # Create custom legend with all four categories
+legend_elements = [
+    # Left categories (solid fill)
+    Patch(facecolor=colorsPalette[0], alpha=1, label="Left, Green"),
+    Patch(facecolor=colorsPalette[1], alpha=1, label="Left, Red"),
+    # Right categories (hatched)
+    Patch(
+        facecolor="none",
+        hatch="///",
+        edgecolor=colorsPalette[2],
+        label="Right, Green",
+    ),
+    Patch(
+        facecolor="none",
+        hatch="///",
+        edgecolor=colorsPalette[3],
+        label="Right, Red",
+    ),
+]
+
+# Add the legend
+g.ax.legend(handles=legend_elements, fontsize=20)
+
+# Customize the plot
+g.ax.set_title("Red Trials:\n Previous TD and its Color", fontsize=30)
+g.ax.set_ylabel("ASEM (deg/s)", fontsize=30)
+g.ax.set_xlabel(r"$\mathbb{P}$(Left|Red)", fontsize=30)
+g.ax.tick_params(labelsize=25)
+
+plt.tight_layout()
+plt.savefig(pathFig + "/aSPvRedInteraction.svg", transparent=True)
+plt.show()
+# %%
+# Create the base plot
+g = sns.catplot(
+    data=df_prime[df_prime.color == "Green"],
+    x="proba",
+    y="aSPv",
+    hue="interaction",
+    kind="bar",
+    errorbar=("ci", 95),
+    n_boot=1000,
+    palette=colorsPalette,
+    height=10,
+    aspect=1.5,
+    alpha=0.7,
+    capsize=0.1,
+    hue_order=hue_order,
+    legend=False,
+)
+
+# Determine the number of bars per x-value
+n_categories = len(df_prime["interaction"].unique())
+n_x_values = len(df_prime["proba"].unique())
+total_bars = n_categories * n_x_values
+
+# Add hatching to the bars for 'right' categories
+for i, bar in enumerate(g.ax.patches):
+    # Determine if this bar represents a 'right' category
+    if i > 5:  # Second half of bars for each x-value
         bar.set_facecolor("none")  # Make bar empty
         bar.set_hatch("///")  # Add diagonal lines
         bar.set_edgecolor(colorsPalette[i // n_x_values])  # Maintain the category color
@@ -1023,7 +1276,7 @@ sns.stripplot(
     dodge=True,
     jitter=True,
     size=8,
-    data=learningCurveInteraction[learningCurveInteraction.color == "Red"],
+    data=learningCurveInteraction[learningCurveInteraction.color == "Green"],
     # legend=False,
 )
 
@@ -1049,40 +1302,14 @@ legend_elements = [
 
 # Add the legend
 g.ax.legend(handles=legend_elements, fontsize=20)
-
-# Customize the plot
-g.ax.set_title("Anticipatory Velocity Given Previous TD: color Red", fontsize=30)
-g.ax.set_ylabel("ASEM (deg/s)", fontsize=30)
-g.ax.set_xlabel(r"$\mathbb{P}$(Left|Red)", fontsize=30)
-g.ax.tick_params(labelsize=25)
-
-plt.tight_layout()
-plt.savefig(pathFig + "/aSPvRedInteraction.svg", transparent=True)
-plt.show()
-# %%
-fig = plt.figure()
-
-# Toggle full screen mode
-figManager = plt.get_current_fig_manager()
-figManager.full_screen_toggle()
-sns.barplot(
-    x="proba",
-    y="aSPv",
-    palette=colorsPalette,
-    hue="interaction",
-    hue_order=df_prime["interaction"].unique(),
-    data=df_prime[df_prime.color == "Green"],
-)
-plt.legend(fontsize=20)
-plt.xticks(fontsize=25)
-plt.yticks(fontsize=25)
-plt.ylim(-1.25, 1.25)
 plt.title(
-    "ASEM:color Green\n Interaction of Previous Target Direction & color Chosen",
+    "Green Trials\n Interaction of Previous Target Direction & color Chosen",
     fontsize=30,
 )
 plt.xlabel(r"$\mathbb{P}$(Left|Green)", fontsize=30)
 plt.ylabel("ASEM (deg/s)", fontsize=30)
+g.ax.tick_params(labelsize=25)
+plt.tight_layout()
 plt.savefig(pathFig + "/aSPvGreenInteraction.svg", transparent=True)
 plt.show()
 # %%

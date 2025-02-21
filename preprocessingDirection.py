@@ -77,7 +77,7 @@ dirVoluntary = (
 dirImposed = (
     "/Users/mango/oueld.h/contextuaLearning/directionCue/results_imposeDirection/"
 )
-main_dir = dirImposed
+main_dir = dirVoluntary
 
 subject_sessions = get_subjects_and_sessions(main_dir)
 
@@ -272,7 +272,11 @@ for idxSub, sub in enumerate(subjects):
             # print(data)
             # Read the .tsv file
             tg_dir = pd.read_csv(tsv_file)["target_direction"].values
+            if main_dir == dirImposed:
 
+                arrow = pd.read_csv(tsv_file)["arrow"].values
+            else:
+                arrow = pd.read_csv(tsv_file)["chosen_arrow"].values
             # Getting the probabilty from the csv file.
 
             proba = pd.read_csv(tsv_file)["proba"].values[0]
@@ -290,12 +294,12 @@ for idxSub, sub in enumerate(subjects):
 
             for trial in list(range(param_exp["N_trials"])):
                 print("Trial {0}, session {1}, sub {2}".format(trial, session, sub))
-
                 if len(data[trial]["x"]) and len(data[trial]["y"]):
                     data[trial]["y"] = screen_height_px - data[trial]["y"]
 
                     type_dir = "R" if param_exp["dir_target"][trial] == 1 else "L"
-
+                    type_arrow = arrow[trial]
+                    trialType_txt = "{a}{d}".format(a=type_arrow, d=type_dir)
                     # Get trial data and transform into the arg
                     arg = A.arg(data_trial=data[trial], trial=trial, block=0)
                     # print(arg)
@@ -434,7 +438,7 @@ for idxSub, sub in enumerate(subjects):
                         "condition": proba,
                         "session": session,
                         "trial": trial,
-                        "trialType": type_dir,
+                        "trialType": trialType_txt,
                         "direction": param_exp["dir_target"][trial],
                         "time_x": time_x,
                         "time_y": time_y,
@@ -562,7 +566,7 @@ for idxSub, sub in enumerate(subjects):
                         newResult["condition"] = proba
                         newResult["session"] = session
                         newResult["trial"] = trial
-                        newResult["trialType"] = type_dir
+                        newResult["trialType"] = trialType_txt
                         newResult["target_dir"] = param_exp["dir_target"][trial]
 
                         x = arg.trackertime - arg.TargetOn
@@ -650,7 +654,7 @@ for idxSub, sub in enumerate(subjects):
                         newResult["condition"] = proba
                         newResult["session"] = session
                         newResult["trial"] = trial
-                        newResult["trialType"] = type_dir
+                        newResult["trialType"] = trialType_txt
                         newResult["target_dir"] = param_exp["dir_target"][trial]
                         newResult["time_x"] = time_x
                         newResult["velocity_x"] = vel_x
