@@ -6,14 +6,15 @@ import seaborn as sns
 # %%
 
 df = pd.read_hdf(
-    "/Users/mango/oueld.h/contextuaLearning/ColorCue/data/sub-02/sub-02_col50-dir75_rawData.h5",
+    "/Users/mango/oueld.h/contextuaLearning/ColorCue/data/sub-05/sub-05_col50-dir25_rawData.h5",
     "data",
 )
 data = pd.read_csv("/Users/mango/anemoanlysis/LMM/dataANEMO_allSubs_activeColorCP.csv")
 # %%
-dd = data[(data["pR-Red"] == 0.75) & (data["sub"] == "sub-02")]
+dd = data[(data["pR-Red"] == 0.25) & (data["sub"] == "sub-05")]
 dd
 # %%
+# Looking for only the  valid trials from Anemo.
 df = df[((df["trial"] - 1).isin(dd["trial"].values))]
 # %%
 df.columns
@@ -101,7 +102,7 @@ plt.show()
 
 
 # First, let's reshape the data into a format seaborn can use
-def create_long_format_data(arr, time_values, condition, direction):
+def create_long_format_data(arr, time_values, cue, direction):
     # Create a long format dataframe for each trial type
     dfs = []
     for i in range(len(arr)):
@@ -109,7 +110,7 @@ def create_long_format_data(arr, time_values, condition, direction):
             {
                 "Time": time_values,
                 "Velocity": arr[i],
-                "Condition": condition,
+                "Cue": cue,
                 "Direction": direction,
             }
         )
@@ -128,13 +129,16 @@ all_data = pd.concat(
     ignore_index=True,
 )
 
+# %%
+all_data
+# %%
 # Create the plot
 plt.figure(figsize=(12, 6))
 sns.lineplot(
     data=all_data,
     x="Time",
     y="Velocity",
-    hue="Condition",
+    hue="Cue",
     style="Direction",
     errorbar="ci",
     palette=["red", "green"],
@@ -152,20 +156,15 @@ plt.show()
 # %%
 # Doing it for another block
 df = pd.read_hdf(
-    "/Users/mango/oueld.h/contextuaLearning/directionCue/results_voluntaryDirection/sub-009/session-04/rawData.h5",
+    "/Users/mango/oueld.h/contextuaLearning/directionCue/results_voluntaryDirection/sub-009/session-03/rawData.h5",
     "data",
 )
 data = pd.read_csv("/Users/mango/anemoanlysis/LMM/dataANEMO_allSubs_voluntaryArrow.csv")
 # %%
-dd = data[(data["session"] == "session-04") & (data["sub"] == 9)]
+dd = data[(data["session"] == "session-03") & (data["sub"] == 9)]
 dd
 # %%
 df = df[(df["trial"].isin(dd["trial"].values))]
-# %%
-# for t, v in zip(df.time_x.values, df.velocity_x.values):
-#     plt.plot(t, v)
-#     plt.show()
-#
 # %%
 downL = df[df["trialType"] == "downL"][["time_x", "velocity_x"]]
 downR = df[df["trialType"] == "downR"][["time_x", "velocity_x"]]
@@ -206,7 +205,6 @@ for i in range(len(arrUp)):
 # %%
 upTrials = np.nanmean(arrUp, axis=0)
 # %%
-# %%
 plt.plot(df.time_x.iloc[0][:300], upTrials[:300], label="Up Trials", color="orange")
 plt.plot(df.time_x.iloc[0][:300], downTrials[:300], label="Down Trials", color="blue")
 plt.show()
@@ -241,4 +239,34 @@ plt.plot(df.time_x.iloc[0], upTrialsR, label="Up Trials Right", color="orange")
 plt.legend()
 plt.xlabel("Time in ms", fontsize=20)
 plt.ylabel("aSPV (deg/s)", fontsize=20)
+plt.show()
+# %%
+all_data = pd.concat(
+    [
+        create_long_format_data(arrUpL, df.time_x.iloc[0], "Up", "Left"),
+        # create_long_format_data(arrUpR, df.time_x.iloc[0], "Up", "Right"),
+        # create_long_format_data(arrDownL, df.time_x.iloc[0], "Down", "Left"),
+        create_long_format_data(arrDownR, df.time_x.iloc[0], "Down", "Right"),
+    ],
+    ignore_index=True,
+)
+
+# %%
+all_data
+# %%
+# Create the plot
+plt.figure(figsize=(12, 6))
+sns.lineplot(
+    data=all_data,
+    x="Time",
+    y="Velocity",
+    hue="Cue",
+    style="Direction",
+    errorbar="ci",
+    palette=["orange", "blue"],
+)
+
+plt.xlabel("Time in ms", fontsize=20)
+plt.ylabel("aSPV (deg/s)", fontsize=20)
+plt.legend(title="", bbox_to_anchor=(1.05, 1), loc="upper left")
 plt.show()

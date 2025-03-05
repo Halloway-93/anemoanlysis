@@ -29,10 +29,9 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
 
-activeColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/data"
-passiveColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/imposedColorData"
-attentionColor = "/Users/mango/oueld.h/attentionalTask/data"
-main_dir = activeColor
+
+motionDrirection = "/Users/mango/oueld.h/contextuaLearning/motionDirectionCue"
+main_dir = motionDrirection
 os.chdir(main_dir)
 
 # %matplotlib auto
@@ -72,71 +71,27 @@ lmm_dir = "~/anemoanlysis/LMM"
 
 # %% Parameters
 
-if main_dir == activeColor:
-    subjects = [
-        "sub-01",
-        "sub-02",
-        "sub-03",
-        "sub-04",
-        "sub-05",
-        "sub-06",
-        "sub-07",
-        "sub-08",
-        "sub-09",
-        "sub-10",
-        "sub-11",
-        "sub-12",
-        "sub-13",
-        "sub-14",
-        "sub-15",
-        "sub-16",
-    ]
-elif main_dir == passiveColor:
-
-    subjects = [
-        "sub-01",
-        "sub-02",
-        "sub-03",
-        "sub-04",
-        "sub-05",
-        "sub-06",
-        "sub-07",
-        "sub-08",
-        "sub-09",
-        "sub-10",
-        "sub-11",
-    ]
-
-else:
-
-    subjects = [
-        "sub-01",
-        "sub-02",
-        "sub-03",
-        "sub-04",
-        "sub-05",
-        "sub-06",
-        "sub-07",
-        "sub-08",
-        "sub-09",
-        "sub-10",
-        "sub-11",
-        "sub-12",
-        "sub-13",
-    ]
-
+subjects = [
+    "sub-001",
+    "sub-002",
+    "sub-003",
+    "sub-004",
+    "sub-005",
+    "sub-006",
+    "sub-007",
+    "sub-008",
+    "sub-009",
+    "sub-010",
+    "sub-011",
+]
 conditions = [
-    "col50-dir25",
-    "col50-dir50",
-    "col50-dir75",
+    "c1",
+    "c2",
+    "c3",
 ]
 
 
-colormap = {
-    "Red": np.array([255, 25, 7, 255]) / 255,
-    "Green": np.array([25, 255, 120, 255]) / 255,
-}
-
+colorsPalettes = ["#0F68A9", "#FAAE7B"]
 # # %% violinplots + export mean Velocities
 print("Plotting parameters - violin plots")
 
@@ -155,8 +110,12 @@ for sub in subjects:
     try:
         h5_file = "{sub}/{sub}_smoothPursuitData.h5".format(sub=sub)
         data_tmp = pd.read_hdf(h5_file, "data")
+        print(data_tmp)
+        data_tmp["firstSeg"] = data_tmp.apply(lambda x: x["trialType"][:-1], axis=1)
 
-        # if the start_anti = latency-1, them there's no anticipation... so changes the value to nan
+        print(
+            data_tmp["firstSeg"]
+        )  # if the start_anti = latency-1, them there's no anticipation... so changes the value to nan
         data_tmp["aSPon"][data_tmp["aSPoff"] == data_tmp["aSPon"] + 1] = np.nan
         data_tmp["trial_color"] = [x[:-1] for x in data_tmp["trialType"]]
         data_tmp["sub"] = sub
@@ -168,7 +127,6 @@ for sub in subjects:
         # traceback.print_exc()
 # %%
 
-dataSub["pR-Red"] = [int(x.split("-")[1][-2:]) / 100 for x in dataSub["cond"]]
 
 keys2plot = [
     ["aSPon", 300, "Anticipation Onset", "ms"],
@@ -181,11 +139,11 @@ for k in keys2plot:  # for each variable to plot
     fig1 = plt.figure(figsize=(single_col, 6 * cm))  # width, height in inches
     plt.title("{0}".format(k[2]))
     sns.violinplot(
-        x="pR-Red",
+        x="proba",
         y=k[0],
-        hue="trial_color",
+        hue="firstSeg",
         data=data2plot,
-        palette=colormap,
+        palette=colorsPalettes,
         saturation=1,
         # bw=0.3,
         cut=0,
@@ -197,10 +155,12 @@ for k in keys2plot:  # for each variable to plot
     )
     # ax.set_xticklabels(labels=list(condList.values()))
     plt.ylabel("{}".format(k[2]))
-    plt.xlabel("P(Right|Red)")
+    plt.xlabel("P(Right|UP)")
     plt.tight_layout()
     # plt.ylim(k[3])
-    plt.savefig("allSubs_mean_{}_violinplot".format(k[0]))  # variable
+    plt.savefig(
+        os.path.join(main_dir, "allSubs_mean_{}_violinplot".format(k[0]))
+    )  # variable
     # plt.savefig('allSubs_mean_{}_violinplot.pdf'.format(k[2]))
     # plt.savefig('allSubs_mean_{}_violinplot.svg'.format(k[2]))
 
@@ -209,11 +169,11 @@ for k in keys2plot:  # for each variable to plot
     for sub in subjects:
         plt.subplot(4, 4, int(sub[-2:]))
         sns.violinplot(
-            x="pR-Red",
+            x="proba",
             y=k[0],
-            hue="trial_color",
+            hue="firstSeg",
             data=data2plot[data2plot["sub"] == sub],
-            palette=colormap,
+            palette=colorsPalettes,
             saturation=1,
             # bw=0.3,
             cut=0,
@@ -224,23 +184,14 @@ for k in keys2plot:  # for each variable to plot
             inner="quartile",
         )
 
-    plt.savefig("allSubs_{}_violinplot".format(k[0]))  # variable
+    os.path.join(main_dir, "allSubs_mean_{}_violinplot".format(k[0]))
     # plt.savefig('allSubs_{}_violinplot.pdf'.format(k[2]))
     # plt.savefig('allSubs_{}_violinplot.svg'.format(k[2]))
 
 # export data for LMM
 
-if main_dir == activeColor:
 
-    dataSub.to_csv(f"{lmm_dir}/dataANEMO_allSubs_activeColorCP.csv", index=False)
-elif main_dir == passiveColor:
-
-    dataSub.to_csv(f"{lmm_dir}/dataANEMO_allSubs_passiveColorCP.csv", index=False)
-
-else:
-
-    dataSub.to_csv(f"{lmm_dir}/dataANEMO_allSubs_attentionColorCP.csv", index=False)
-
+dataSub.to_csv(f"{lmm_dir}/dataANEMO_allSubs_motionDirectionCP.csv", index=False)
 # %%
 
 # data2plot = dataSub  # select the data to plot

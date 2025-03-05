@@ -13,7 +13,6 @@ creates and updates files after running preprocessing.py and qualityctrol.py
 import os
 import numpy as np
 import pandas as pd
-
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.backends.backend_pdf import PdfPages
@@ -33,17 +32,6 @@ import traceback
 
 # %% Parameters
 # run always
-import os
-import numpy as np
-import pandas as pd
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-from matplotlib.backends.backend_pdf import PdfPages
-
-from functions.utils import *
-from ANEMO.ANEMO import ANEMO, read_edf
-from functions.utils import *
 
 activeColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/data"
 passiveColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/imposedColorData"
