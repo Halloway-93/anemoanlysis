@@ -12,16 +12,12 @@ subXX_BA_qualityControl.h5 - list of trials with labels for bad data and bad fit
 """
 # %%
 import os
-import sys
-import h5py
-import time as timer
 import numpy as np
 import pandas as pd
 from functions.utils import *
 from ANEMO.ANEMO import ANEMO, read_edf
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-import scipy
 
 print("Current working directory:", os.getcwd())
 print("Contents of current directory:", os.listdir())
@@ -90,6 +86,22 @@ subjects = [
 
 conditions = ["c1", "c2", "c3"]  # This is for the balanced cues.
 
+conds_by_sub=dict(
+    {   
+    "sub-001":["c1", "c2", "c3"],
+    "sub-002":["c1", "c2", "c3"],
+    "sub-003":["c1", "c2", "c3"],
+    "sub-004":["c1", "c2", "c3"],
+    "sub-005":["c1", "c2", "c3"],
+    "sub-006":["c1", "c2", "c3"],
+    "sub-007":["c1", "c2", "c3"],
+    "sub-008":["c1", "c2", "c3"],
+    "sub-009":["c1", "c2", "c3"],
+    "sub-010":["c1", "c2", "c3"],
+    "sub-011":["c4", "c5", "c6"],
+     }
+)
+
 
 time_sup = 10  # time window to cut at the end of the trial
 
@@ -126,7 +138,7 @@ for idxSub, sub in enumerate(subjects):
     print("Subject:", sub)
     subNumber = int(sub.split("-")[1])
 
-    for cond in conditions:
+    for cond in conds_by_sub[sub]:
         try:
             h5_file = "{sub}/CP_s{subNumber}{cond}_posFilter.h5".format(
                 sub=sub, subNumber=subNumber, cond=cond
@@ -201,9 +213,9 @@ for idxSub, sub in enumerate(subjects):
 
             firstTrial = True
 
-            if cond == "c1":
+            if cond == "c1" or  cond == "c5":
                 proba = 0.5
-            elif cond == "c2":
+            elif cond == "c2" or  cond == "c6":
                 proba = 0.75
             else:
                 proba = 0.25
@@ -716,7 +728,7 @@ for idxSub, sub in enumerate(subjects):
 
             del paramsRaw, abc, paramsSub, qualityCtrl, newResult
 
-        except Exception as e:
+        except Exception:
             print("Error! \n Couldn't process {}, condition {}".format(sub, cond))
             traceback.print_exc()
 

@@ -19,10 +19,10 @@ df = df[((df["trial"] - 1).isin(dd["trial"].values))]
 # %%
 df.columns
 # %%
-for t, v in zip(df.time_x.values, df.velocity_x.values):
-    plt.plot(t, v)
-    plt.show()
-
+# for t, v in zip(df.time_x.values, df.velocity_x.values):
+#     plt.plot(t, v)
+#     plt.show()
+#
 # %%
 greenL = df[df["trialType"] == "GreenL"][["time_x", "velocity_x"]]
 greenR = df[df["trialType"] == "GreenR"][["time_x", "velocity_x"]]
@@ -156,12 +156,12 @@ plt.show()
 # %%
 # Doing it for another block
 df = pd.read_hdf(
-    "/Users/mango/oueld.h/contextuaLearning/directionCue/results_voluntaryDirection/sub-009/session-03/rawData.h5",
+    "/Users/mango/oueld.h/contextuaLearning/directionCue/results_voluntaryDirection/sub-009/session-04/rawData.h5",
     "data",
 )
 data = pd.read_csv("/Users/mango/anemoanlysis/LMM/dataANEMO_allSubs_voluntaryArrow.csv")
 # %%
-dd = data[(data["session"] == "session-03") & (data["sub"] == 9)]
+dd = data[(data["session"] == "session-04") & (data["sub"] == 9)]
 dd
 # %%
 df = df[(df["trial"].isin(dd["trial"].values))]

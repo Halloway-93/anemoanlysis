@@ -66,7 +66,7 @@ for s in subs:
             filPath = f"/Users/mango/oueld.h/contextuaLearning/motionDirectionCue/sub-00{s}/sub-00{s}_c{i}.tsv"
 
         mat = pd.read_csv(filPath, sep="\t")
-        print( mat[mat.firstSegmentMotion==1]["firstSegmentMotion"].value_counts())
+        print( mat[mat.firstSegmentMotion==1]["secondSegmentMotion"].value_counts())
             
 # %%
 cond = filPath.split(

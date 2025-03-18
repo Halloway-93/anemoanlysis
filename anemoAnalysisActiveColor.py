@@ -1,8 +1,9 @@
 from scipy import stats
+from sklearn.preprocessing import LabelEncoder
 from statsmodels.stats.multitest import multipletests
 import scikit_posthocs as sp
 from scipy.stats import friedmanchisquare, wilcoxon
-from scipy.stats import spearmanr
+from scipy.stats import spearmanr,pearsonr
 import statsmodels.formula.api as smf
 import pingouin as pg
 import matplotlib.pyplot as plt
@@ -70,16 +71,16 @@ for s in df["sub"].unique():
     )
 # %%
 sns.histplot(data=df, x="aSPv")
-plt.show()
+#plt.show()
 # %%
 sns.histplot(data=df, x="SPlat")
-plt.show()
+#plt.show()
 # %%
 sns.histplot(data=df, x="aSPoff")
-plt.show()
+#plt.show()
 # %%
 sns.histplot(data=df, x="aSPon")
-plt.show()
+#plt.show()
 # %%
 allEvents.columns
 # %%
@@ -123,6 +124,7 @@ df.TD_prev
 df["TD_prev"] = df["TD_prev"].apply(lambda x: "right" if x == 1 else "left")
 # %%
 df = df[(df["sub"] != 9)]
+df = df[(df["sub"] != 15)]
 # df = df[df["sub"].isin([1, 2, 5, 7, 8, 11, 13])]
 # df = df[(df["aSPoff"] <= 120)]
 # %%
@@ -131,7 +133,7 @@ df.columns
 colors = ["Green", "Red"]
 # %%
 # dd = df.groupby(["sub", "color", "proba", "TD_prev"])[["aSPv"]].mean().reset_index()
-dd = df.groupby(["sub", "color", "proba"])[["aSPv"]].mean().reset_index()
+dd = df.groupby(["sub", "color", "proba"])[["aSPv", "aSPoff"]].mean().reset_index()
 dd[dd["aSPv"] == dd["aSPv"].min()]
 # %%
 df[
@@ -154,6 +156,9 @@ proba = dd[dd.color == "Red"]["proba"]
 correlation, p_value = spearmanr(aSPv, proba)
 print(f"Spearman's correlation(Red): {correlation}, p-value: {p_value}")
 # %%
+correlation, p_value = pearsonr(aSPv, proba)
+print(f"Pearson's correlation(Red): {correlation}, p-value: {p_value}")
+# %%
 aSPv = dd[dd.color == "Green"]["aSPv"]
 proba = dd[dd.color == "Green"]["proba"]
 
@@ -161,7 +166,9 @@ proba = dd[dd.color == "Green"]["proba"]
 correlation, p_value = spearmanr(aSPv, proba)
 print(f"Spearman's correlation (Green): {correlation}, p-value: {p_value}")
 
-
+# %%
+correlation, p_value = pearsonr(aSPv, proba)
+print(f"Pearson's correlation(Green): {correlation}, p-value: {p_value}")
 # %%
 df.columns
 # %%
@@ -174,7 +181,7 @@ for s in df["sub"].unique():
             x="proba",
         )
         plt.title(f"Subject{s}, Color{c}")
-        plt.show()
+        #plt.show()
 
 # %%
 for s in df["sub"].unique():
@@ -182,10 +189,12 @@ for s in df["sub"].unique():
         data=df[(df["sub"] == s)],
         y="aSPv",
         hue="color",
+        hue_order=colors,
+        palette=[GreencolorsPalette[1], RedcolorsPalette[1]],
         x="proba",
     )
     plt.title(f"Subject{s}")
-    plt.show()
+    #plt.show()
 
 # %%
 # Create a mapping of color names to numerical values
@@ -193,7 +202,7 @@ for s in df["sub"].unique():
     plt.figure(figsize=(10, 6))
     sns.boxplot(data=df[df["sub"] == s], x="color", hue="proba", y="aSPv")
     plt.title(f"Subject {s}")
-    plt.show()
+    #plt.show()
 # %%
 color_map = {name: i for i, name in enumerate(df["color"].unique())}
 
@@ -207,13 +216,13 @@ for s in df["sub"].unique():
         x="color_numeric",
     )
     plt.title(f"Subject{s}")
-    plt.show()
+    #plt.show()
 
 # %%
 for c in df["color"].unique():
     sns.lmplot(data=df[(df["color"] == c)], x="aSPv", hue="sub", y="proba", height=10)
     plt.title(f"Color {c}")
-    plt.show()
+    #plt.show()
 
 # %%
 
@@ -258,9 +267,9 @@ slopeG = slope_df[slope_df["color"] == "Green"]["slope"]
 slopeR = slope_df[slope_df["color"] == "Red"]["slope"]
 
 # Spearman's rank correlation
-correlation, p_value = spearmanr(slopeG, slopeR)
+correlation, p_value = pearsonr(slopeG, slopeR)
 print(
-    f"Spearman's correlation(Slope Green, Slope Red): {correlation}, p-value: {p_value}"
+    f"Pearson's correlation(Slope Green, Slope Red): {correlation}, p-value: {p_value}"
 )
 # %%
 aSPvG = (
@@ -274,8 +283,8 @@ aSPvR = (
 # %%
 
 # Spearman's rank correlation
-correlation, p_value = spearmanr(slopeG, aSPvG)
-print(f"Spearman's correlation(Slope Green, aSPvG): {correlation}, p-value: {p_value}")
+correlation, p_value = pearsonr(slopeG, aSPvG)
+print(f"Pearson's correlation(Slope Green, aSPvG): {correlation}, p-value: {p_value}")
 # %%
 # Extract slope values for Green and Red colors
 green_slopes = slope_df[slope_df.color == "Green"]["slope"]
@@ -345,14 +354,21 @@ plt.axis("equal")
 
 # Show plot
 plt.tight_layout()
-plt.show()
+plt.savefig(pathFig + "/linearRegressionSlopesFullProba.pdf", transparent=True)
+#plt.show()
 # %%
-aSPv = dd[dd["proba"] == 0.75]["aSPv"]
-color = dd[dd["proba"] == 0.75]["color"]
 
+aSPv = dd[dd["proba"] == 0.75]["aSPv"].values
+color = dd[dd["proba"] == 0.75]["color"].values
+
+
+encoder = LabelEncoder()
+color_numeric = encoder.fit_transform(color)
 # Spearman's rank correlation
 correlation, p_value = spearmanr(aSPv, color)
 print(f"Spearman's correlation(proba 75): {correlation}, p-value: {p_value}")
+correlation, p_value = pearsonr(aSPv, color_numeric)
+print(f"Pearson's correlation(proba 75): {correlation}, p-value: {p_value}")
 # %%
 aSPv = dd[dd["proba"] == 0.25]["aSPv"]
 color = dd[dd["proba"] == 0.25]["color"]
@@ -361,6 +377,8 @@ color = dd[dd["proba"] == 0.25]["color"]
 correlation, p_value = spearmanr(aSPv, color)
 print(f"Spearman's correlation(proba 25): {correlation}, p-value: {p_value}")
 
+correlation, p_value = pearsonr(aSPv, color_numeric)
+print(f"Pearson's correlation(proba 25): {correlation}, p-value: {p_value}")
 
 # %%
 
@@ -371,14 +389,16 @@ color = dd[dd["proba"] == 0.50]["color"]
 correlation, p_value = spearmanr(aSPv, color)
 print(f"Spearman's correlation(proba 50): {correlation}, p-value: {p_value}")
 
+correlation, p_value = pearsonr(aSPv, color_numeric)
+print(f"Pearson's correlation(proba 50): {correlation}, p-value: {p_value}")
 
 # %%
 
 # Friedman test for Red color
-pg.friedman(data=df[df.color == "Red"], dv="aSPv", within="proba", subject="sub")
+friedmantest=pg.friedman(data=df[df.color == "Red"], dv="aSPv", within="proba", subject="sub",method='f')
+print(friedmantest)
 # %%
-
-pg.friedman(data=df[df.color == "Green"], dv="aSPv", within="proba", subject="sub")
+pg.friedman(data=df[df.color == "Green"], dv="aSPv", within="proba", subject="sub",method='f')
 # %%
 # Wilcoxon Test to see whether the color has an effect within each proba
 # It is the equivalent of paiRed t-test
@@ -409,6 +429,9 @@ print(result)
 # %%
 dd
 # %%
+sns.boxplot(data=dd, hue="proba", x="color", y="aSPoff")
+#plt.show()
+# %%
 # Pivot the data for proba
 pivot_proba = dd[dd["color"] == "Green"].pivot(
     index="sub", columns="proba", values="aSPv"
@@ -426,7 +449,7 @@ print(
 
 # %%
 # Pivot the data for proba
-pivot_proba = dd[dd.color == "Green"].pivot(index="sub", columns="proba", values="aSPv")
+pivot_proba = dd[dd.color == "Red"].pivot(index="sub", columns="proba", values="aSPv")
 pivot_proba
 # %%
 # Perform the Friedman Test for proba
@@ -442,15 +465,12 @@ print(
 # Pivot the data for proba
 pivot_color = dd[dd["proba"] == 0.25].pivot(index="sub", columns="color", values="aSPv")
 pivot_color
-
 # %%
 # Perform the wilcoxon Test for color
 statistic_color, p_value_color = wilcoxon(pivot_color["Green"], pivot_color["Red"])
 print(
     f"Wilcoxon Test for color Statistic(P(Right|Red)=25) = {statistic_color}, p-value = {p_value_color}"
 )
-
-
 # %%
 # Pivot the data for proba
 pivot_color = dd[dd["proba"] == 0.50].pivot(index="sub", columns="color", values="aSPv")
@@ -462,7 +482,6 @@ statistic_color, p_value_color = wilcoxon(pivot_color["Green"], pivot_color["Red
 print(
     f"Wilcoxon Test for color Statistic(P(Right|Red)=50) = {statistic_color}, p-value = {p_value_color}"
 )
-
 
 # %%
 # Pivot the data for proba
@@ -522,7 +541,7 @@ for s in df["sub"].unique():
         # multiple="dodge",
         palette=colors,
     )
-    plt.show()
+    #plt.show()
 # %%
 sns.displot(
     data=df[df.proba == 0.75],
@@ -536,7 +555,7 @@ sns.displot(
     # multiple="dodge",
     palette=colors,
 )
-plt.show()
+#plt.show()
 # %%
 # Early trials
 earlyTrials = 40
@@ -552,7 +571,7 @@ sns.displot(
     palette=colors,
 )
 plt.title(f"Early Trials: {earlyTrials}, P(Right|Red)={p}")
-plt.show()
+#plt.show()
 
 # %%
 # Mid trials
@@ -567,7 +586,7 @@ sns.histplot(
     palette=colors,
 )
 plt.title(f"Mid Trials: {midTrials[0]},{midTrials[1]}: P(Right|Red)={p}")
-plt.show()
+#plt.show()
 # %%
 # Late trials
 lateTrials = 200
@@ -581,7 +600,7 @@ sns.histplot(
     palette=colors,
 )
 plt.title(f"Late Trials >{lateTrials}: P(Right|Red)={p}")
-plt.show()
+#plt.show()
 # %%
 # Repeated measures ANOVA
 # Perform mixed ANOVA
@@ -597,19 +616,18 @@ print(anova_table.summary())
 # checking the normality of the data
 print(pg.normality(dd[dd.color == "Green"]["aSPv"]))
 # %%
-stat, p = stats.kstest(
-    dd[dd.color == "Green"]["aSPv"],
-    "norm",
-    args=(
-        dd[dd.color == "Green"]["aSPv"].mean(),
-        dd[dd.color == "Green"]["aSPv"].std(ddof=1),
-    ),
-)
-print(f"Statistic: {stat}, p-value: {p}")
+print(pg.normality(dd[dd.color == "Red"]["aSPv"]))
 # %%
-x = dd["aSPv"]
+
+
+# %%
+x = dd[dd.color == "Red"]["aSPv"]
 ax = pg.qqplot(x, dist="norm")
-plt.show()
+#plt.show()
+# %%
+x = dd[dd.color == "Green"]["aSPv"]
+ax = pg.qqplot(x, dist="norm")
+#plt.show()
 
 # %%
 
@@ -632,7 +650,7 @@ facet_grid.add_legend()
 
 # Set titles for each subplot
 for ax, p in zip(facet_grid.axes.flat, df.proba.unique()):
-    ax.set_title(f"ASEM: P(Right|Red)=P(Left|Green)={p}")
+    ax.set_title(f"Horizontal aSPv: P(Right|Red)=P(Left|Green)={p}")
     ax.legend(["Red", "Green"])
 # Adjust spacing between subplots
 facet_grid.figure.subplots_adjust(
@@ -640,7 +658,7 @@ facet_grid.figure.subplots_adjust(
 )  # Adjust wspace and hspace as needed
 
 # Show the plot
-plt.show()
+#plt.show()
 
 # %%
 for s in df["sub"].unique():
@@ -665,7 +683,7 @@ for s in df["sub"].unique():
 
     # Set titles for each subplot
     for ax, p in zip(facet_grid.axes.flat, df_s.proba.unique()):
-        ax.set_title(f"ASEM Subject {s}: P(Right|Red)=P(Left|Green)={p}")
+        ax.set_title(f"Horizontal aSPv Subject {s}: P(Right|Red)=P(Left|Green)={p}")
         ax.legend(["Red", "Green"])
     # Adjust spacing between subplots
     facet_grid.figure.subplots_adjust(
@@ -673,7 +691,7 @@ for s in df["sub"].unique():
     )  # Adjust wspace and hspace as needed
 
     # Show the plot
-    plt.show()
+    #plt.show()
 
 # %%
 # Perform mixed repeated measures ANOVA
@@ -713,6 +731,16 @@ anova_results = pg.rm_anova(
 )
 
 print(anova_results)
+
+# %%
+dd[(dd["proba"] == 0.75) & (dd["color"] == "Green")]
+# %%
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.75) & (dd["color"] == "Red")]["aSPv"],
+    y=dd[(dd["proba"] == 0.75) & (dd["color"] == "Green")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
 # %%
 anova_results = pg.rm_anova(
     dv="aSPv",
@@ -722,6 +750,15 @@ anova_results = pg.rm_anova(
 )
 
 print(anova_results)
+
+# %%
+
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.5) & (dd["color"] == "Red")]["aSPv"],
+    y=dd[(dd["proba"] == 0.5) & (dd["color"] == "Green")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
 # %%
 anova_results = pg.rm_anova(
     dv="aSPv",
@@ -731,6 +768,59 @@ anova_results = pg.rm_anova(
 )
 
 print(anova_results)
+
+# %%
+
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.25) & (dd["color"] == "Red")]["aSPv"],
+    y=dd[(dd["proba"] == 0.25) & (dd["color"] == "Green")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
+# %%
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.25) & (dd["color"] == "Red")]["aSPv"],
+    y=dd[(dd["proba"] == 0.50) & (dd["color"] == "Red")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
+# %%
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.5) & (dd["color"] == "Red")]["aSPv"],
+    y=dd[(dd["proba"] == 0.75) & (dd["color"] == "Red")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
+# %%
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.25) & (dd["color"] == "Red")]["aSPv"],
+    y=dd[(dd["proba"] == 0.75) & (dd["color"] == "Red")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
+# %%
+#Green Color
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.25) & (dd["color"] == "Green")]["aSPv"],
+    y=dd[(dd["proba"] == 0.50) & (dd["color"] == "Green")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
+# %%
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.5) & (dd["color"] == "Green")]["aSPv"],
+    y=dd[(dd["proba"] == 0.75) & (dd["color"] == "Green")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
+# %%
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.25) & (dd["color"] == "Green")]["aSPv"],
+    y=dd[(dd["proba"] == 0.75) & (dd["color"] == "Green")]["aSPv"],
+    paired=True,
+)
+
+print(ttest_results)
 # %%
 fig = plt.figure()
 # Toggle full screen mode
@@ -747,14 +837,14 @@ sns.pointplot(
     hue_order=colors,
     palette=colors,
 )
-# _ = plt.title("ASEM Across probabilities", fontsize=30)
+# _ = plt.title("Horizontal aSPv Across probabilities", fontsize=30)
 plt.legend(fontsize=20)
 plt.xlabel(r"$\mathbb{P}$(Right|Red)=$\mathbb{P}$(Left|Green)", fontsize=30)
 plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/aSPvAcrossprobapp.svg", transparent=True)
-plt.show()
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
+plt.savefig(pathFig + "/aSPvAcrossprobapp.pdf", transparent=True)
+#plt.show()
 # %%
 sns.catplot(
     data=dd,
@@ -769,8 +859,8 @@ sns.catplot(
     fill=False,
     cut=0,
 )
-plt.savefig(pathFig + "/aSPvAcrossprobaviolin.svg", transparent=True)
-plt.show()
+plt.savefig(pathFig + "/aSPvAcrossprobaviolin.pdf", transparent=True)
+#plt.show()
 # %%
 # Toggle full screen mode
 figManager = plt.get_current_fig_manager()
@@ -785,14 +875,14 @@ sns.pointplot(
     palette="tab20",
     alpha=0.8,
 )
-# _ = plt.title("ASEM Per Subject: color Red", fontsize=30)
+# _ = plt.title("Horizontal aSPv Per Subject: color Red", fontsize=30)
 plt.legend(fontsize=20)
 plt.xlabel(r"$\mathbb{P}$(Right|Red)", fontsize=30)
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsRed.svg", transparent=True)
-plt.show()
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
+plt.savefig(pathFig + "/individualsRed.pdf", transparent=True)
+#plt.show()
 # %%
 sns.lmplot(
     data=dd[dd.color == "Red"],
@@ -802,14 +892,14 @@ sns.lmplot(
     palette="tab20",
     height=10,
 )
-# _ = plt.title("ASEM Per Subject: color Red", fontsize=30)
+# _ = plt.title("Horizontal aSPv Per Subject: color Red", fontsize=30)
 # plt.legend(fontsize=20)
 plt.xlabel(r"$\mathbb{P}$(Right|Red)", fontsize=30)
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsRedlm.svg", transparent=True)
-plt.show()
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
+plt.savefig(pathFig + "/individualsRedlm.pdf", transparent=True)
+#plt.show()
 # %%
 sns.lmplot(
     data=dd[dd.color == "Green"],
@@ -819,14 +909,14 @@ sns.lmplot(
     palette="tab20",
     height=10,
 )
-# _ = plt.title("ASEM Per Subject: color Red", fontsize=30)
+# _ = plt.title("Horizontal aSPv Per Subject: color Red", fontsize=30)
 # plt.legend(fontsize=20)
 plt.xlabel(r"$\mathbb{P}$(Left|Green)", fontsize=30)
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsGreenlm.svg", transparent=True)
-plt.show()
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
+plt.savefig(pathFig + "/individualsGreenlm.pdf", transparent=True)
+#plt.show()
 # %%
 fig = plt.figure()
 # Toggle full screen mode
@@ -862,7 +952,7 @@ plt.ylabel(r"aSPv Color Red", fontsize=30)
 plt.legend()
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
-plt.show()
+#plt.show()
 # %%
 fig = plt.figure()
 # Toggle full screen mode
@@ -904,7 +994,7 @@ plt.ylabel(r"aSPv Color Red", fontsize=30)
 plt.legend()
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
-plt.show()
+#plt.show()
 # %%
 fig = plt.figure()
 # Toggle full screen mode
@@ -920,14 +1010,14 @@ sns.pointplot(
     palette="tab20",
     alpha=0.8,
 )
-# _ = plt.title("ASEM Per Subject: color Green", fontsize=30)
+# _ = plt.title("Horizontal aSPv Per Subject: color Green", fontsize=30)
 plt.legend(fontsize=20)
 plt.xlabel(r"$\mathbb{P}$(Left|Green)", fontsize=30)
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsGreen.svg", transparent=True)
-plt.show()
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
+plt.savefig(pathFig + "/individualsGreen.pdf", transparent=True)
+#plt.show()
 # %%
 # pg.normality(df[df.color == "Red"], group="proba", dv="aSPv")
 # %%
@@ -939,8 +1029,6 @@ anova_results = pg.rm_anova(
 )
 
 print(anova_results)
-# %%
-df
 # %%
 model = smf.mixedlm(
     "aSPv~proba*color",
@@ -956,36 +1044,26 @@ residuals = model.resid
 # Q-Q plot
 stats.probplot(residuals, dist="norm", plot=plt)
 plt.title("Q-Q plot of residuals")
-plt.show()
+#plt.show()
 # %%
 pg.qqplot(residuals, dist="norm")
-plt.show()
+#plt.show()
 # %%
 # Histogram
 plt.hist(residuals, bins=50)
 plt.title("Histogram of residuals")
-plt.show()
-# %%
-# Shapiro-Wilk test for normality# Perform the KS test on the residuals
-stat, p = stats.kstest(residuals, "norm")
-
-print(f"KS test statistic: {stat:.4f}")
-print(f"KS test p-value: {p:.4f}")
-# a %%
-normaltest_result = stats.normaltest(residuals)
-print(f"D'Agostino's K^2 test p-value: {normaltest_result.pvalue:.4f}")
+#plt.show()
 # %%
 model = smf.mixedlm(
-    "aSPv~proba",
+    "aSPv~C(proba,Treatment(0.5))",
     data=df[df.color == "Red"],
     re_formula="~proba",
     groups=df[df.color == "Red"]["sub"],
 ).fit()
 model.summary()
-
 # %%
 model = smf.mixedlm(
-    "aSPv~proba",
+    "aSPv~C(proba,Treatment(0.5))",
     data=df[df.color == "Green"],
     re_formula="~proba",
     groups=df[df.color == "Green"]["sub"],
@@ -998,12 +1076,12 @@ residuals = model.resid
 # Q-Q plot
 stats.probplot(residuals, dist="norm", plot=plt)
 plt.title("Q-Q plot of residuals")
-plt.show()
+#plt.show()
 
 # Histogram
 plt.hist(residuals, bins=50)
 plt.title("Histogram of residuals")
-plt.show()
+#plt.show()
 # %%
 stat, p = stats.kstest(residuals, "norm")
 
@@ -1025,12 +1103,12 @@ residuals = model.resid
 # Q-Q plot
 stats.probplot(residuals, dist="norm", plot=plt)
 plt.title("Q-Q plot of residuals")
-plt.show()
+#plt.show()
 
 # Histogram
 plt.hist(residuals, bins=50)
 plt.title("Histogram of residuals")
-plt.show()
+#plt.show()
 
 normaltest_result = stats.normaltest(residuals)
 print(f"D'Agostino's K^2 test p-value: {normaltest_result.pvalue:.4f}")
@@ -1054,18 +1132,24 @@ model.summary()
 # %%
 dd = df.groupby(["sub", "proba", "color"])[["aSPv"]].mean().reset_index()
 # %%
-fig = plt.figure()
-# Toggle full screen mode
-figManager = plt.get_current_fig_manager()
-figManager.full_screen_toggle()
-sns.barplot(
+# fig = plt.figure()
+# # Toggle full screen mode
+# figManager = plt.get_current_fig_manager()
+# figManager.full_screen_toggle()
+g=sns.catplot(
     x="proba",
     y="aSPv",
     hue="color",
-    errorbar="ci",
+    errorbar=("ci", 95),
+    n_boot=1000,
+    kind='bar',
+    height=10,  # Set the height of the figure
+    aspect=1.5,
+    capsize=0.1,
     palette=[GreencolorsPalette[1], RedcolorsPalette[1]],
     hue_order=colors,
     fill=False,
+    legend=False,
     data=df,
     # alpha=0.5,
 )
@@ -1082,16 +1166,22 @@ sns.stripplot(
     legend=False,
 )
 
-plt.legend(fontsize=20, title="Color", title_fontsize=20)
-# plt.title("ASEM across 3 different probabilites", fontsize=30)
-plt.xlabel(r"$\mathbb{P}$(Right|Red)=$\mathbb{P}$(Left|Green)", fontsize=30)
+legend_elements = [
+    Patch(facecolor=GreencolorsPalette[1], alpha=1, label="Green"),
+    Patch(facecolor=RedcolorsPalette[1], alpha=1, label="Red"),
+]
+g.ax.legend(
+    handles=legend_elements, fontsize=20, title="Color", title_fontsize=20
+)
+# plt.title("Horizontal aSPv across 3 different probabilites", fontsize=30)
+plt.xlabel(r"$\mathbb{P}$(Right|Red)=$\mathbb{P}$(Left|Green)", fontsize=25)
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
 # plt.ylim(-0.75, 0.75)
-plt.legend(fontsize=20)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/aSPvcolors.svg", transparent=True)
-plt.show()
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=25)
+plt.tight_layout()
+plt.savefig(pathFig + "/aSPvcolors.pdf", transparent=True)
+#plt.show()
 
 # %%
 
@@ -1122,15 +1212,15 @@ sns.stripplot(
 )
 
 plt.legend(fontsize=20, title="Color", title_fontsize=20)
-# plt.title("ASEM across 3 different probabilites", fontsize=30)
+# plt.title("Horizontal aSPv across 3 different probabilites", fontsize=30)
 plt.xlabel(r"$\mathbb{P}$(Right|Red)=$\mathbb{P}$(Left|Green)", fontsize=30)
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
 # plt.ylim(-0.75, 0.75)
 plt.legend(fontsize=20)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/aSPvcolorsbp.svg", transparent=True)
-plt.show()
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
+plt.savefig(pathFig + "/aSPvcolorsbp.pdf", transparent=True)
+#plt.show()
 # %%
 df_prime = df[
     [
@@ -1160,9 +1250,9 @@ plt.xlabel(r"$\mathbb{P}$(Right|Red)", fontsize=30)
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
 plt.ylim(-0.75, 0.75)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/aSPvRed.svg", transparent=True)
-plt.show()
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
+plt.savefig(pathFig + "/aSPvRed.pdf", transparent=True)
+#plt.show()
 # %%
 fig = plt.figure()
 # Toggle full screen mode
@@ -1177,15 +1267,15 @@ sns.barplot(
 )
 # plt.title("Anticipatory Smooth Eye Movement: color Green", fontsize=30)
 plt.xlabel(r"$\mathbb{P}$(Left|Green)", fontsize=30)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
 plt.ylim(-0.75, 0.75)
-plt.savefig(pathFig + "/aSPvGreen.svg", transparent=True)
-plt.show()
+plt.savefig(pathFig + "/aSPvGreen.pdf", transparent=True)
+#plt.show()
 # %%
 dd = df.groupby(["sub", "color", "proba", "TD_prev"])[["aSPv"]].mean().reset_index()
-# %%
+# s%%
 # Create the plot using catplot
 g = sns.catplot(
     data=df[df.color == "Green"],
@@ -1241,14 +1331,14 @@ g.ax.legend(
 
 # Customize the plot
 # g.ax.set_title("Anticipatory Velocity Given Previous TD: color Green ", fontsize=30)
-g.ax.set_ylabel("ASEM (deg/s)", fontsize=30)
+g.ax.set_ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 g.ax.set_xlabel(r"$\mathbb{P}$(Left|Green)", fontsize=30)
 g.ax.tick_params(labelsize=25)
 # g.ax.set_ylim(-1, 1)
 
 plt.tight_layout()
-plt.savefig(pathFig + "/aSPvGreenTD.svg", transparent=True)
-plt.show()
+plt.savefig(pathFig + "/aSPvGreenTD.pdf", transparent=True)
+#plt.show()
 # %%
 g = sns.catplot(
     data=df[df.color == "Red"],
@@ -1306,15 +1396,15 @@ g.ax.legend(
 )
 
 # Customize the plot
-g.ax.set_title("Anticipatory Velocity Given Previous TD: Color Red ", fontsize=30)
-g.ax.set_ylabel("ASEM (deg/s)", fontsize=30)
+# g.ax.set_title("Anticipatory Velocity Given Previous TD: Color Red ", fontsize=30)
+g.ax.set_ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 g.ax.set_xlabel(r"$\mathbb{P}$(Right|Red)", fontsize=30)
 g.ax.tick_params(labelsize=25)
 # g.ax.set_ylim(-1, 1)
 
 plt.tight_layout()
-plt.savefig(pathFig + "/aSPvRedTD.svg", transparent=True)
-plt.show()
+plt.savefig(pathFig + "/aSPvRedTD.pdf", transparent=True)
+#plt.show()
 
 # %%
 dd[
@@ -1376,7 +1466,7 @@ df_prime.groupby(["proba", "interaction", "color"]).count()[["aSPv"]]
 # %%
 # cc = df_prime.groupby(["sub", "proba", "interaction", "color"]).count()[["aSPv"]]
 # sns.barplot(data=cc, x="sub", y="aSPv", hue="interaction")
-# plt.show()
+# #plt.show()
 # %%
 learningCurveInteraction["interaction"].unique()
 # %%
@@ -1475,13 +1565,13 @@ g.ax.legend(
 
 # Customize the plot
 g.ax.set_title("Red Trials:\n Previous TD and Color", fontsize=30)
-g.ax.set_ylabel("ASEM (deg/s)", fontsize=30)
+g.ax.set_ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 g.ax.set_xlabel(r"$\mathbb{P}$(Right|Red)", fontsize=30)
 g.ax.tick_params(labelsize=25)
 
 plt.tight_layout()
-plt.savefig(pathFig + "/aSPvRedInteraction.svg", transparent=True)
-plt.show()
+plt.savefig(pathFig + "/aSPvRedInteraction.pdf", transparent=True)
+#plt.show()
 # %%
 # Create the base plot
 g = sns.catplot(
@@ -1558,11 +1648,11 @@ plt.title(
     fontsize=30,
 )
 plt.xlabel(r"$\mathbb{P}$(Left|Green)", fontsize=30)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 g.ax.tick_params(labelsize=25)
 plt.tight_layout()
-plt.savefig(pathFig + "/aSPvGreenInteraction.svg", transparent=True)
-plt.show()
+plt.savefig(pathFig + "/aSPvGreenInteraction.pdf", transparent=True)
+#plt.show()
 # %%
 learningCurveInteraction[
     learningCurveInteraction["aSPv"] == learningCurveInteraction["aSPv"].min()
@@ -1710,7 +1800,7 @@ for s in conditional_probabilities["sub"].unique():
     )
 
     # Show the plot
-    plt.show()
+    #plt.show()
 
 
 # %%
@@ -1810,7 +1900,7 @@ def classify_subject_behavior(conditional_probabilities):
     behavior_counts = subject_classification["behavior_class"].value_counts()
     plt.pie(behavior_counts, labels=behavior_counts.index, autopct="%1.1f%%")
     plt.title("Subject Behavior Classification\n(Consistent Across probabilities)")
-    plt.show()
+    #plt.show()
 
     # Print detailed results
     print(subject_classification)
@@ -1853,7 +1943,7 @@ sns.lmplot(
     y="aSPv",
     hue="behavior",
 )
-plt.show()
+#plt.show()
 # %%
 sns.lmplot(
     data=dd[(dd["color"] == "Red")],
@@ -1861,7 +1951,7 @@ sns.lmplot(
     y="aSPv",
     hue="behavior",
 )
-plt.show()
+#plt.show()
 
 # %%
 dd
@@ -1880,7 +1970,7 @@ for p in df["proba"].unique():
     plt.title(f"proba={p}")
     plt.xticks(fontsize=15)
     plt.yticks(fontsize=15)
-    plt.show()
+    #plt.show()
 # %%
 conditional_probabilities
 # %%
@@ -2041,8 +2131,8 @@ plt.ylabel("adaptation", fontsize=20)
 plt.xlabel("persistence_score", fontsize=20)
 plt.xticks(fontsize=15)
 plt.yticks(fontsize=15)
-plt.savefig(pathFig + "/samplingBiasColours.svg", transparent=True)
-plt.show()
+plt.savefig(pathFig + "/samplingBiasColours.pdf", transparent=True)
+#plt.show()
 # %%
 sns.lmplot(
     data=result,
@@ -2056,8 +2146,8 @@ plt.ylabel("adaptation_Green", fontsize=20)
 plt.xlabel("persistence_score", fontsize=20)
 plt.xticks(fontsize=15)
 plt.yticks(fontsize=15)
-plt.savefig(pathFig + "/samplingBiasGreen.svg", transparent=True)
-plt.show()
+plt.savefig(pathFig + "/samplingBiasGreen.pdf", transparent=True)
+#plt.show()
 # %%
 
 sns.lmplot(
@@ -2072,11 +2162,11 @@ plt.ylabel("adaptation_Red", fontsize=20)
 plt.xlabel("persistence_score", fontsize=20)
 plt.xticks(fontsize=15)
 plt.yticks(fontsize=15)
-plt.savefig(pathFig + "/samplingBiasRed.svg", transparent=True)
-plt.show()
+plt.savefig(pathFig + "/samplingBiasRed.pdf", transparent=True)
+#plt.show()
 # %%
 sns.lmplot(data=result, x="adaptation_Green", y="adaptation_Red")
-plt.show()
+#plt.show()
 # %%
 correlation, p_value = spearmanr(result["adaptation_Green"], result["adaptation_Red"])
 print(
@@ -2091,7 +2181,7 @@ sns.scatterplot(
     s=100,
     palette="tab20",
 )
-plt.show()
+#plt.show()
 # %%
 
 sns.lmplot(
@@ -2099,7 +2189,7 @@ sns.lmplot(
     x="persistence_score_Green",
     y="persistence_score_Red",
 )
-plt.show()
+#plt.show()
 
 # %%
 
@@ -2190,28 +2280,28 @@ sns.scatterplot(
 )
 plt.axhline(y=0, color="k", linestyle="--")  # Horizontal line at y=0
 plt.axvline(x=0, color="k", linestyle="--")  # Vertical line at x=0
-plt.show()
+#plt.show()
 # %%
 sns.boxplot(
     data=pivot_table,
     x="proba",
     y="adaptation",
 )
-plt.show()
+#plt.show()
 # %%
 sns.boxplot(
     data=pivot_table,
     x="proba",
     y="Green",
 )
-plt.show()
+#plt.show()
 # %%
 sns.boxplot(
     data=pivot_table,
     x="proba",
     y="Green",
 )
-plt.show()
+#plt.show()
 # %%
 # Create the plot with connected dots for each participant
 plt.figure(figsize=(8, 6))
@@ -2238,8 +2328,8 @@ plt.ylim(-2.5, 2.5)
 plt.xlim(-2.5, 2.5)
 plt.legend(title="proba")
 plt.tight_layout()
-plt.show()
-plt.show()
+#plt.show()
+#plt.show()
 # %%
 # Connect dots for each participant
 for sub in pivot_table["sub"].unique():
@@ -2262,7 +2352,7 @@ for sub in pivot_table["sub"].unique():
     plt.ylabel("Green")
     plt.legend(title="proba")
     plt.tight_layout()
-    plt.show()
+    #plt.show()
 # %%
 # Group by 'sub', 'proba', and 'color' and calculate the mean of 'aSPv'
 mean_velo = df.groupby(["sub", "proba", "interaction"])["aSPv"].mean().reset_index()
@@ -2305,14 +2395,14 @@ plt.axhline(y=0, color="k", linestyle="--")  # Horizontal line at y=0
 plt.axvline(x=0, color="k", linestyle="--")  # Vertical line at x=0
 plt.xlim(-2.5, 2.5)
 plt.ylim(-2.5, 2.5)
-plt.show()
+#plt.show()
 # a %%
 sns.pointplot(
     data=pivot_table,
     x="proba",
     y="adaptation",
 )
-plt.show()
+#plt.show()
 
 # %%
 sns.scatterplot(
@@ -2323,14 +2413,14 @@ plt.axhline(y=0, color="k", linestyle="--")  # Horizontal line at y=0
 plt.axvline(x=0, color="k", linestyle="--")  # Vertical line at x=0
 plt.xlim(-2.5, 2.5)
 plt.ylim(-2.5, 2.5)
-plt.show()
+#plt.show()
 # a %%
 sns.pointplot(
     data=pivot_table,
     x="proba",
     y="adaptation",
 )
-plt.show()
+#plt.show()
 
 # %%
 # Looking at the interaction between the position and the choice of the color
@@ -2340,7 +2430,7 @@ plt.hist(
     .count()
     .reset_index(name="count")["count"]
 )
-plt.show()
+#plt.show()
 # %%
 df_inter = (
     df.groupby(["sub", "proba", "color", "trialTgUP", "TD_prev"])["aSPv"]
@@ -2365,13 +2455,13 @@ sns.barplot(
 )
 plt.legend(fontsize=20)
 # plt.title("Anticipatory Velocity Given the color Position: Green ", fontsize=30)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 plt.xlabel(r"$\mathbb{P}$(Left|Green)", fontsize=30)
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
 plt.ylim(-1, 1)
-# plt.savefig(pathFig + "/aSPvGreenTD.svg")
-plt.show()
+# plt.savefig(pathFig + "/aSPvGreenTD.pdf")
+#plt.show()
 # %%
 fig = plt.figure()
 # Toggle full screen mode
@@ -2386,13 +2476,13 @@ sns.barplot(
 )
 plt.legend(fontsize=20)
 # plt.title("Anticipatory Velocity Given the color Position: Red", fontsize=30)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 plt.xlabel(r"$\mathbb{P}$(Left|Green)", fontsize=30)
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
 plt.ylim(-1, 1)
-# plt.savefig(pathFig + "/aSPvGreenTD.svg")
-plt.show()
+# plt.savefig(pathFig + "/aSPvGreenTD.pdf")
+#plt.show()
 
 # %%
 
@@ -2405,7 +2495,7 @@ df["interColPos"] = df["interColPos"].astype("str")
 for s in df["sub"].unique():
     dfs = df[df["sub"] == s]
     sns.histplot(data=dfs, x="interColPos")
-    plt.show()
+    #plt.show()
 
 
 # %%
@@ -2422,18 +2512,18 @@ sns.barplot(
 )
 plt.legend(fontsize=20)
 # plt.title("Anticipatory Velocity Given the color Position: Green ", fontsize=30)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 plt.xlabel(r"$\mathbb{P}$(Left|Green)", fontsize=30)
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
 plt.ylim(-1, 1)
-# plt.savefig(pathFig + "/aSPvGreenTD.svg")
-plt.show()
+# plt.savefig(pathFig + "/aSPvGreenTD.pdf")
+#plt.show()
 # %%
 for s in df["sub"].unique():
     dfs = df[df["sub"] == s]
     sns.histplot(data=dfs, x="interColPos")
-    plt.show()
+    #plt.show()
 
 
 # %%
@@ -2450,11 +2540,11 @@ sns.barplot(
 )
 plt.legend(fontsize=20)
 # plt.title("Anticipatory Velocity Given the color Position: Green ", fontsize=30)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 plt.xlabel(r"$\mathbb{P}$(Left|Green)", fontsize=30)
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
 plt.ylim(-1, 1)
-# plt.savefig(pathFig + "/aSPvGreenTD.svg")
-plt.show()
+# plt.savefig(pathFig + "/aSPvGreenTD.pdf")
+#plt.show()
 # %%

@@ -1,18 +1,12 @@
 from scipy import stats
-from statsmodels.stats.multitest import multipletests
-import scikit_posthocs as sp
-from scipy.stats import friedmanchisquare, wilcoxon
-from scipy.stats import spearmanr
+from scipy.stats import spearmanr,pearsonr
 import statsmodels.formula.api as smf
 import pingouin as pg
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import statsmodels.api as sm
-from statsmodels.formula.api import ols
 import numpy as np
 from matplotlib.patches import Patch
-import os
 
 # %%
 main_dir = "/Users/mango/oueld.h/contextuaLearning/motionDirectionCue"
@@ -39,16 +33,16 @@ print(df["sub"].unique())
 df["aSPoff"]
 # %%
 sns.histplot(data=df, x="aSPv")
-plt.show()
+#plt.show()
 # %%
 sns.histplot(data=df, x="SPlat")
-plt.show()
+#plt.show()
 # %%
 sns.histplot(data=df, x="aSPoff")
-plt.show()
+#plt.show()
 # %%
 sns.histplot(data=df, x="aSPon")
-plt.show()
+#plt.show()
 # %%
 for sub in df["sub"].unique():
     for p in df[df["sub"] == sub]["proba"].unique():
@@ -77,8 +71,6 @@ for sub in df["sub"].unique():
 # %%
 df[df["TD_prev"].isna()]
 # %%
-# df = df[~((df["sub"] == 6) & (df["proba"] == 0.5))]
-# df = df[~((df["sub"] == 6) & (df["proba"] == 0.5))]
 df = df[~(df["TD_prev"].isna())]
 # %%
 df["TD_prev"] = df["TD_prev"].apply(lambda x: "right" if x == 1 else "left")
@@ -87,42 +79,39 @@ df["interaction"] = list(zip(df["TD_prev"], df["firstSeg_prev"]))
 df[df["aSPv"] == df["aSPv"].max()]["aSPv"]
 # %%
 sns.histplot(data=df, x="aSPv")
-plt.show()
-# %%
-badTrials = df[df["aSPv"] > 8]["aSPv"]
-print(badTrials)
+#plt.show()
 # %%
 balance = df.groupby(["firstSeg", "sub", "proba"])["trial"].count().reset_index()
 print(balance)
-# %%
-df = df[df["sub"] != "sub-011"]
 # %%
 for sub in balance["sub"].unique():
     sns.barplot(
         x="proba", y="trial", hue="firstSeg", data=balance[balance["sub"] == sub]
     )
     plt.title(f"Subject {sub}")
-    plt.show()
+    #plt.show()
 # %%
 dd = df.groupby(["sub", "firstSeg", "proba"])[["aSPv"]].mean().reset_index()
+# %%
+dd
 # %%
 
 np.abs(dd.aSPv.values).max()
 # %%
 
-aSPv = dd[dd["firstSeg"] == "up"]["aSPv"]
-proba = dd[dd["firstSeg"] == "up"]["proba"]
+aSPv = dd[dd["firstSeg"] == "Up"]["aSPv"]
+proba = dd[dd["firstSeg"] == "Up"]["proba"]
 
 # Spearman's rank correlation
-correlation, p_value = spearmanr(aSPv, proba)
-print(f"Spearman's correlation (up): {correlation}, p-value: {p_value}")
+correlation, p_value = pearsonr(aSPv, proba)
+print(f"Pearson's correlation (Up): {correlation}, p-value: {p_value}")
 # %%
-aSPv = dd[dd.firstSeg == "down"]["aSPv"]
-proba = dd[dd.firstSeg == "down"]["proba"]
+aSPv = dd[dd.firstSeg == "Down"]["aSPv"]
+proba = dd[dd.firstSeg == "Down"]["proba"]
 
 # Spearman's rank correlation
 correlation, p_value = spearmanr(aSPv, proba)
-print(f"Spearman's correlation (down): {correlation}, p-value: {p_value}")
+print(f"Spearman's correlation (Down): {correlation}, p-value: {p_value}")
 
 # %%
 aSPv = dd[dd.proba == 0.75]["aSPv"]
@@ -154,8 +143,159 @@ print(f"Spearman's correlation(Proba 0.5): {correlation}, p-value: {p_value}")
 
 
 # %%
+for s in df["sub"].unique():
+    sns.lmplot(
+        data=df[(df["sub"] == s)],
+        y="aSPv",
+        hue="firstSeg",
+        hue_order=['Down','Up'],
+        x="proba",
+    )
+    plt.title(f"Subject{s}")
+    #plt.show()
+
+# %%
+for a in df["firstSeg"].unique():
+    sns.lmplot(data=df[(df["firstSeg"] == a)], x="aSPv", hue="sub", y="proba", height=10)
+    plt.title(f" First Seg {a}")
+    #plt.show()
+
+# %% 
+# Create a list to store results
+slope_data = []
+
+# Loop through each unique color
+for c in df["firstSeg"].unique():
+    # Loop through each subject within this color
+    for s in df[df["firstSeg"] == c]["sub"].unique():
+        # Get data for this specific color and subject
+        subset = df[(df["firstSeg"] == c) & (df["sub"] == s)]
+
+        # Only calculate slope if we have enough data points
+        if len(subset) > 1:
+            # Calculate linear regression
+            slope, intercept, r_value, p_value, std_err = stats.linregress(
+                subset["proba"], subset["aSPv"]
+            )
+
+            # Store results
+            slope_data.append(
+                {
+                    "sub": s,
+                    "firstSeg": c,
+                    "slope": slope,
+                    "r_squared": r_value**2,
+                    "p_value": p_value,
+                }
+            )
+
+# Convert to DataFrame
+slope_df = pd.DataFrame(slope_data)
+
+# If you want to merge this with your original dataframe
+# First create a unique key for merging
+df["firstSeg_sub"] = df["firstSeg"] + "_" + df["sub"].astype(str)
+slope_df["firstSeg_sub"] = slope_df["firstSeg"] + "_" + slope_df["sub"].astype(str)
+print(slope_df)
+# %%
+slopeD = slope_df[slope_df["firstSeg"] == "Down"]["slope"]
+slopeU = slope_df[slope_df["firstSeg"] == "Up"]["slope"]
+
+# Spearman's rank correlation
+correlation, p_value = pearsonr(slopeD, slopeU)
+print(
+    f"Pearson's correlation(Slope Down, Slope Up): {correlation}, p-value: {p_value}"
+)
+# %%
+aSPvD = (
+    dd[(dd["firstSeg"] == "Down") & (dd["proba"] == 0.75)]["aSPv"].values
+    - dd[(dd["firstSeg"] == "Down") & (dd["proba"] == 0.25)]["aSPv"].values
+)
+aSPvU = (
+    dd[(dd["firstSeg"] == "Up") & (dd["proba"] == 0.75)]["aSPv"].values
+    - dd[(dd["firstSeg"] == "Up") & (dd["proba"] == 0.25)]["aSPv"].values
+)
+# %%
+
+# Spearman's rank correlation
+correlation, p_value = spearmanr(slopeU, aSPvU)
+print(f"Spearman's correlation(Slope Up, aSPvU): {correlation}, p-value: {p_value}")
+# %%
+correlation, p_value = spearmanr(slopeD, aSPvD)
+print(f"Spearman's correlation(Slope Down, aSPvD): {correlation}, p-value: {p_value}")
+# Extract slope values for Green and Red colors
+green_slopes = slope_df[slope_df.firstSeg == "Down"]["slope"]
+red_slopes = slope_df[slope_df.firstSeg == "Up"]["slope"]
+
+# Create scatter plot
+plt.figure(figsize=(8, 8))  # Square figure for equal axes
+plt.scatter(x=green_slopes, y=red_slopes, alpha=0.7)
+
+# Calculate linear regression
+slope, intercept, r_value, p_value, std_err = stats.linregress(green_slopes, red_slopes)
+
+# Find the range for both axes to center around 0
+all_values = np.concatenate([green_slopes, red_slopes])
+max_abs_val = max(abs(all_values.min()), abs(all_values.max()))
+axis_limit = max_abs_val * 1.1  # Add 10% margin
+
+# Set equal limits centered on 0
+plt.xlim(-axis_limit, axis_limit)
+plt.ylim(-axis_limit, axis_limit)
+
+# Create x values for the regression line
+x_line = np.linspace(-axis_limit, axis_limit, 100)
+
+# Calculate corresponding y values for regression line
+y_line = slope * x_line + intercept
+
+# Plot the regression line
+plt.plot(
+    x_line,
+    y_line,
+    color="red",
+    linestyle="--",
+    label=f"Regression: y = {slope:.3f}x + {intercept:.3f}",
+)
+
+# Add x=y line
+plt.plot(
+    [-axis_limit, axis_limit],
+    [axis_limit, -axis_limit],
+    "k-",
+    alpha=0.5,
+    label="x = -y",
+)
+
+# Add text with regression parameters
+plt.annotate(
+    f"y = {slope:.3f}x + {intercept:.3f}\nR² = {r_value**2:.3f}, p = {p_value:.3f}",
+    xy=(0.05, 0.95),
+    xycoords="axes fraction",
+    bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.8),
+)
+
+# Add reference lines at x=0 and y=0
+plt.axhline(y=0, color="gray", linestyle="-", alpha=0.3)
+plt.axvline(x=0, color="gray", linestyle="-", alpha=0.3)
+
+# Add labels and title
+plt.xlabel("Down Slope")
+plt.ylabel("Up Slope")
+plt.title("Relationship Between Down and Up Condition Slopes")
+plt.grid(True, alpha=0.3)
+plt.legend(loc="lower right")
+
+# Make axes equal
+plt.axis("equal")
+
+# Show plot
+plt.tight_layout()
+plt.savefig(pathFig + "/linearRegressionSlopesFullProba.pdf", transparent=True)
+#plt.show()
+# %%
 # cehcking the normality of the data
-print(pg.normality(dd[dd.proba == 0.5]["aSPv"]))
+print(pg.normality(dd[dd.proba == 0.25]["aSPv"]))
 # %%
 stat, p = stats.kstest(
     dd["aSPv"], "norm", args=(dd["aSPv"].mean(), dd["aSPv"].std(ddof=1))
@@ -164,7 +304,7 @@ print(f"Statistic: {stat}, p-value: {p}")
 # %%
 x = dd["aSPv"]
 ax = pg.qqplot(x, dist="norm")
-plt.show()
+#plt.show()
 
 
 # Set up the FacetGrid
@@ -181,7 +321,7 @@ facet_grid.map_dataframe(
 )
 # Set titles for each subplot
 for ax, p in zip(facet_grid.axes.flat, np.sort(df.proba.unique())):
-    ax.set_title(f"ASEM: P(Right|up)=P(Left|down)={p}")
+    ax.set_title(f"Horizontal aSPv: P(Right|up)=P(Left|down)={p}")
     ax.legend(["up", "down"])
 # Adjust spacing between subplots
 facet_grid.figure.subplots_adjust(
@@ -189,14 +329,14 @@ facet_grid.figure.subplots_adjust(
 )  # Adjust wspace and hspace as needed
 
 # Show the plot
-plt.show()
+#plt.show()
 
 fig = plt.figure()
 # Toggle full screen mode
 figManager = plt.get_current_fig_manager()
 figManager.full_screen_toggle()
 sns.pointplot(
-    data=df1,
+    data=df,
     x="proba",
     y="aSPv",
     capsize=0.1,
@@ -209,9 +349,9 @@ plt.legend(title="firstSeg", fontsize=20, title_fontsize=20)
 plt.xlabel(r"$\mathbb{P}$(Right|UP)=$\mathbb{P}$(Left|DOWN)", fontsize=30)
 plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/asemAcrossProbappFullProba.svg", transparent=True)
-plt.show()
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
+plt.savefig(pathFig + "/asemAcrossProbappFullProba.pdf", transparent=True)
+#plt.show()
 # %%
 sns.catplot(
     data=dd,
@@ -227,15 +367,15 @@ sns.catplot(
     height=10,
     cut=0,
 )
-# _ = plt.title("ASEM Across Probabilities", fontsize=30)
+# _ = plt.title("Horizontal aSPv Across Probabilities", fontsize=30)
 plt.legend(title="firstSeg", fontsize=20, title_fontsize=20)
 plt.xlabel(r"$\mathbb{P}$(Right|UP)=$\mathbb{P}$(Left|DOWN)", fontsize=30)
 plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 plt.tight_layout()
-plt.savefig(pathFig + "/asemAcrossprobaviolinFullProba.svg", transparent=True)
-plt.show()
+plt.savefig(pathFig + "/asemAcrossprobaviolinFullProba.pdf", transparent=True)
+#plt.show()
 
 # %%
 fig = plt.figure()
@@ -252,14 +392,14 @@ sns.pointplot(
     alpha=0.7,
     palette="tab20",
 )
-_ = plt.title("ASEM Per Subject: firstSeg UP", fontsize=30)
+_ = plt.title("Horizontal aSPv Per Subject: firstSeg UP", fontsize=30)
 plt.legend(fontsize=20)
 plt.xlabel("P(Right|UP)", fontsize=30)
 plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsUPFullProba.svg", transparent=True)
-plt.show()
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
+plt.savefig(pathFig + "/individualsUPFullProba.pdf", transparent=True)
+#plt.show()
 # %%
 sns.lmplot(
     data=dd[dd.firstSeg == "Up"],
@@ -269,13 +409,13 @@ sns.lmplot(
     palette="tab20",
     height=10,
 )
-_ = plt.title("ASEM Per Subject: firstSeg UP", fontsize=30)
+_ = plt.title("Horizontal aSPv Per Subject: firstSeg UP", fontsize=30)
 plt.xlabel(r"$\mathbb{P}$(Right|UP)", fontsize=30)
 plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsUPFullProba.svg", transparent=True)
-plt.show()
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
+plt.savefig(pathFig + "/individualsUPFullProba.pdf", transparent=True)
+#plt.show()
 # %%
 sns.lmplot(
     data=dd[dd.firstSeg == "Down"],
@@ -285,14 +425,14 @@ sns.lmplot(
     palette="tab20",
     height=10,
 )
-_ = plt.title("ASEM Per Subject: firstSeg UP", fontsize=30)
+_ = plt.title("Horizontal aSPv Per Subject: firstSeg UP", fontsize=30)
 plt.xlabel(r"$\mathbb{P}$(Left|DOWN)", fontsize=30)
 plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 plt.tight_layout()
-plt.savefig(pathFig + "/individualsUPFullProba.svg", transparent=True)
-plt.show()
+plt.savefig(pathFig + "/individualsUPFullProba.pdf", transparent=True)
+#plt.show()
 # %%
 fig = plt.figure()
 # Toggle full screen mode
@@ -308,23 +448,22 @@ sns.pointplot(
     alpha=0.7,
     palette="tab20",
 )
-_ = plt.title("ASEM Per Subject: firstSeg DOWN", fontsize=30)
+_ = plt.title("Horizontal aSPv Per Subject: firstSeg DOWN", fontsize=30)
 plt.legend(fontsize=10)
 plt.xlabel("P(Left|DOWN)", fontsize=30)
 plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsDOWNFullProba.svg", transparent=True)
-plt.show()
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
+plt.savefig(pathFig + "/individualsDOWNFullProba.pdf", transparent=True)
+#plt.show()
 # %%
 model = smf.mixedlm(
-    "aSPv~C( firstSeg )*proba",
+    "aSPv~C( firstSeg )*C( proba,Treatment(0.5) )",
     data=df,
     re_formula="~proba",
     groups=df["sub"],
 ).fit()
 model.summary()
-# %%
 # %%
 model = smf.mixedlm(
     "aSPv~C( firstSeg )",
@@ -354,7 +493,7 @@ model.summary()
 
 # %%
 model = smf.mixedlm(
-    "aSPv~ proba",
+    "aSPv~ C(proba,Treatment(0.5))",
     data=df[df.firstSeg == "Up"],
     re_formula="~proba",
     groups=df[df.firstSeg == "Up"]["sub"],
@@ -363,7 +502,7 @@ model.summary()
 
 # %%
 model = smf.mixedlm(
-    "aSPv~ proba",
+    "aSPv~ C(proba,Treatment(0.5))",
     data=df[df.firstSeg == "Down"],
     re_formula="~proba",
     groups=df[df.firstSeg == "Down"]["sub"],
@@ -376,18 +515,24 @@ downfirstSegsPalette = ["#0F68A9", "#A2D9FF"]
 upfirstSegsPalette = ["#FAAE7B", "#FFD699"]
 dd = df.groupby(["sub", "firstSeg", "proba"])[["aSPv"]].mean().reset_index()
 # %%
-fig = plt.figure()
-# Toggle full screen mode
-figManager = plt.get_current_fig_manager()
-figManager.full_screen_toggle()
-sns.barplot(
+# fig = plt.figure()
+# # Toggle full screen mode
+# figManager = plt.get_current_fig_manager()
+# figManager.full_screen_toggle()
+g=sns.catplot(
     x="proba",
     y="aSPv",
     hue="firstSeg",
+    kind="bar",
+    errorbar=("ci", 95),
+    n_boot=1000,
+    height=10,  # Set the height of the figure
+    aspect=1.5,
+    capsize=0.1,
     hue_order=["Down", "Up"],
     data=df,
-    errorbar="ci",
     fill=False,
+    legend=False,
     palette=[downfirstSegsPalette[0], upfirstSegsPalette[0]],
 )
 sns.stripplot(
@@ -401,16 +546,142 @@ sns.stripplot(
     size=6,
     linewidth=1,
     # alpha=0.5,
-    legend=False,
+    # legend=False,
 )
-# plt.title("ASEM Across 5 Probabilities", fontsize=30)
-plt.xlabel(r"$\mathbb{P}$(Right|UP)=$\mathbb{P}$(Left|DOWN)", fontsize=30)
-plt.ylabel("ASEM (deg/s)", fontsize=30)
+# plt.title("Horizontal aSPv Across 5 Probabilities", fontsize=30)
+plt.xlabel(r"$\mathbb{P}$(Right|Up)=$\mathbb{P}$(Left|Down)", fontsize=25)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=25)
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
-plt.legend(title="firstSeg", title_fontsize=20, fontsize=20)
-plt.savefig(pathFig + "/aSPvfirstSegsFullProba.svg", transparent=True)
-plt.show()
+legend_elements = [
+    Patch(facecolor=downfirstSegsPalette[0], alpha=1, label="Down"),
+    Patch(facecolor=upfirstSegsPalette[0], alpha=1, label="Up"),
+]
+g.ax.legend(
+    handles=legend_elements, fontsize=20, title="firstSeg", title_fontsize=20
+)
+plt.tight_layout()
+plt.savefig(pathFig + "/aSPvfirstSegsFullProba.pdf", transparent=True)
+#plt.show()
+# %%
+# %%
+downfirstSegsPalette = ["#0F68A9", "#A2D9FF"]
+upfirstSegsPalette = ["#FAAE7B", "#FFD699"]
+dd = df.groupby(["sub", "firstSeg", "proba"])[["aSPv"]].mean().reset_index()
+# %%
+# fig = plt.figure()
+# # Toggle full screen mode
+# figManager = plt.get_current_fig_manager()
+# figManager.full_screen_toggle()
+g=sns.catplot(
+    x="proba",
+    y="aSPv",
+    hue="firstSeg",
+    kind="bar",
+    errorbar=("ci", 95),
+    n_boot=1000,
+    height=10,  # Set the height of the figure
+    aspect=1.5,
+    capsize=0.1,
+    hue_order=["Down", "Up"],
+    data=df,
+    fill=False,
+    legend=False,
+    palette=[downfirstSegsPalette[0], upfirstSegsPalette[0]],
+)
+sns.stripplot(
+    x="proba",
+    y="aSPv",
+    hue="firstSeg",
+    data=dd,
+    dodge=True,
+    palette=[downfirstSegsPalette[0], upfirstSegsPalette[0]],
+    jitter=True,
+    size=6,
+    linewidth=1,
+    # alpha=0.5,
+    # legend=False,
+)
+# plt.title("Horizontal aSPv Across 5 Probabilities", fontsize=30)
+plt.xlabel(r"$\mathbb{P}$(Right|Up)=$\mathbb{P}$(Left|Down)", fontsize=25)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=25)
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+legend_elements = [
+    Patch(facecolor=downfirstSegsPalette[0], alpha=1, label="Down"),
+    Patch(facecolor=upfirstSegsPalette[0], alpha=1, label="Up"),
+]
+g.ax.legend(
+    handles=legend_elements, fontsize=20, title="firstSeg", title_fontsize=20
+)
+plt.tight_layout()
+plt.savefig(pathFig + "/aSPvfirstSegsFullProba.pdf", transparent=True)
+#plt.show()
+# %%
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.25) & (dd["firstSeg"] == "Up")]["aSPv"],
+    y=dd[(dd["proba"] == 0.25) & (dd["firstSeg"] == "Down")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
+# %%
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.75) & (dd["firstSeg"] == "Up")]["aSPv"],
+    y=dd[(dd["proba"] == 0.75) & (dd["firstSeg"] == "Down")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
+# %%
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.5) & (dd["firstSeg"] == "Up")]["aSPv"],
+    y=dd[(dd["proba"] == 0.5) & (dd["firstSeg"] == "Down")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
+# %%
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.25) & (dd["firstSeg"] == "Down")]["aSPv"],
+    y=dd[(dd["proba"] == 0.50) & (dd["firstSeg"] == "Down")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
+# %%
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.5) & (dd["firstSeg"] == "Down")]["aSPv"],
+    y=dd[(dd["proba"] == 0.75) & (dd["firstSeg"] == "Down")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
+# %%
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.25) & (dd["firstSeg"] == "Down")]["aSPv"],
+    y=dd[(dd["proba"] == 0.75) & (dd["firstSeg"] == "Down")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
+
+# %%
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.25) & (dd["firstSeg"] == "Up")]["aSPv"],
+    y=dd[(dd["proba"] == 0.50) & (dd["firstSeg"] == "Up")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
+# %%
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.5) & (dd["firstSeg"] == "Up")]["aSPv"],
+    y=dd[(dd["proba"] == 0.75) & (dd["firstSeg"] == "Up")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
+# %%
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.25) & (dd["firstSeg"] == "Up")]["aSPv"],
+    y=dd[(dd["proba"] == 0.75) & (dd["firstSeg"] == "Up")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
+
 # %%
 df_prime = df[
     [
@@ -498,13 +769,13 @@ g.ax.legend(
 # Customize the plot
 # g.ax.set_title("Anticipatory Velocity Given Previous TD: firstSeg Down", fontsize=30)
 g.ax.set_xlabel(r"$\mathbb{P}$(Left|Down)", fontsize=25)
-g.ax.set_ylabel("ASEM (deg/s)", fontsize=25)
+g.ax.set_ylabel("Horizontal aSPv (deg/s)", fontsize=25)
 g.ax.tick_params(labelsize=25)
 # g.ax.set_ylim(-1, 1)
 
 plt.tight_layout()
-plt.savefig(pathFig + "/aSPvdownTDFullProba.svg", transparent=True)
-plt.show()
+plt.savefig(pathFig + "/aSPvdownTDFullProba.pdf", transparent=True)
+#plt.show()
 
 # %%
 # Create the plot using catplot
@@ -561,14 +832,14 @@ g.ax.legend(
 
 # Customize the plot
 # g.ax.set_title("Anticipatory Velocity Given Previous TD: firstSeg Up", fontsize=30)
-g.ax.set_xlabel(r"$\mathbb{P}$(Right|UP)", fontsize=25)
-g.ax.set_ylabel("ASEM (deg/s)", fontsize=25)
+g.ax.set_xlabel(r"$\mathbb{P}$(Right|Up)", fontsize=25)
+g.ax.set_ylabel("Horizontal aSPv (deg/s)", fontsize=25)
 g.ax.tick_params(labelsize=25)
 # g.ax.set_ylim(-1, 1)
 
 plt.tight_layout()
-plt.savefig(pathFig + "/aSPvupTDFullProba.svg", transparent=True)
-plt.show()
+plt.savefig(pathFig + "/aSPvupTDFullProba.pdf", transparent=True)
+#plt.show()
 # %%
 df["interaction"] = list(zip(df["TD_prev"], df["firstSeg_prev"]))
 df_prime = df[
@@ -685,13 +956,13 @@ g.ax.legend(
 
 # Customize the plot
 g.ax.set_title("Up Trials:\n Previous TD and its firstSeg", fontsize=30)
-g.ax.set_ylabel("ASEM (deg/s)", fontsize=30)
+g.ax.set_ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 g.ax.set_xlabel(r"$\mathbb{P}$(Right|Up)", fontsize=30)
 g.ax.tick_params(labelsize=25)
 
 plt.tight_layout()
-plt.savefig(pathFig + "/aSPvUpInteractionFullProba.svg", transparent=True)
-plt.show()
+plt.savefig(pathFig + "/aSPvUpInteractionFullProba.pdf", transparent=True)
+#plt.show()
 
 # %%
 # Create the base plot
@@ -770,13 +1041,13 @@ g.ax.legend(
 
 # Customize the plot
 g.ax.set_title("Down Trials:\n Previous TD and its firstSeg", fontsize=30)
-g.ax.set_ylabel("ASEM (deg/s)", fontsize=30)
+g.ax.set_ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 g.ax.set_xlabel(r"$\mathbb{P}$(Left|Down)", fontsize=30)
 g.ax.tick_params(labelsize=25)
 
 plt.tight_layout()
-plt.savefig(pathFig + "/aSPvDownInteractionFullProba.svg", transparent=True)
-plt.show()
+plt.savefig(pathFig + "/aSPvDownInteractionFullProba.pdf", transparent=True)
+#plt.show()
 # %%
 dd = df.groupby(["sub", "proba", "firstSeg", "TD_prev"])["aSPv"].mean().reset_index()
 # %%
@@ -804,6 +1075,7 @@ model = smf.mixedlm(
 ).fit(method="lbfgs")
 model.summary()
 # %%
+
 
 # Define transition counts for previous state = down
 down_transitions = (
@@ -889,7 +1161,7 @@ for s in conditional_probabilities["sub"].unique():
     )
 
     # Show the plot
-    plt.show()
+    #plt.show()
 # %%
 # Define transition counts for previous state = down
 down_transitions = (
@@ -938,85 +1210,105 @@ conditional_probabilities["transition_state"].unique()
 
 
 # %%
-def classify_subject_behavior(conditional_probabilities):
-    # Create a function to categorize behavior for a single probability condition
-    def categorize_single_proba(group):
-        # Transition probabilities for this probability condition
-        down_to_down = group[group["transition_state"] == "('down', 'down')"][
-            "conditional_prob"
-        ].values[0]
-        up_to_up = group[group["transition_state"] == "('up', 'up')"][
-            "conditional_prob"
-        ].values[0]
-        down_to_up = group[group["transition_state"] == "('up', 'down')"][
-            "conditional_prob"
-        ].values[0]
-        up_to_down = group[group["transition_state"] == "('down', 'up')"][
-            "conditional_prob"
-        ].values[0]
-
-        # Persistent: high probability of staying in the same state
-        if down_to_down > 0.6 and up_to_up > 0.6:
-            return "Persistent"
-
-        # Alternating: high probability of switching states
-        if down_to_up > 0.6 and up_to_down > 0.6:
-            return "Alternating"
-
-        return "Random"
-
-    # Classify behavior for each subject and probability
-    subject_proba_behavior = (
-        conditional_probabilities.groupby(["sub", "proba"])
-        .apply(lambda x: categorize_single_proba(x))
-        .reset_index(name="behavior")
-    )
-    print(subject_proba_behavior)
-
-    # Count behaviors for each subject across probabilities
-    behavior_counts = (
-        subject_proba_behavior.groupby(["sub", "behavior"]).size().unstack(fill_value=0)
-    )
-
-    # Classify subject based on behavior consistency across at least two probabilities
-    def final_classification(row):
-        if row["Persistent"] >= 2:
-            return "Persistent"
-        elif row["Alternating"] >= 2:
-            return "Alternating"
-        else:
-            return "Random"
-
-    subject_classification = behavior_counts.apply(
-        final_classification, axis=1
-    ).reset_index()
-    subject_classification.columns = ["sub", "behavior_class"]
-
-    # Visualize classification
-    plt.figure(figsize=(10, 6))
-    behavior_counts = subject_classification["behavior_class"].value_counts()
-    plt.pie(behavior_counts, labels=behavior_counts.index, autopct="%1.1f%%")
-    plt.title("Subject Behavior Classification\n(Consistent Across Probabilities)")
-    plt.show()
-
-    # Print detailed results
-    print(subject_classification)
-
-    # Additional detailed view
-    detailed_behavior = subject_proba_behavior.pivot_table(
-        index="sub", columns="proba", values="behavior", aggfunc="first"
-    )
-    print("\nDetailed Behavior Across Probabilities:")
-    print(detailed_behavior)
-
-    return subject_classification
-
-
-subject_classification = classify_subject_behavior(conditional_probabilities)
+mean_velo = df.groupby(["sub", "proba", "firstSeg"])["aSPv"].mean().reset_index()
+print(mean_velo)
+pivot_table = mean_velo.pivot_table(
+    index=["sub", "proba"], columns="firstSeg", values="aSPv"
+).reset_index()
+pivot_table
 # %%
-# Perform classification
-# Optional: Create a more detailed summary
-summary = subject_classification.groupby("behavior_class").size()
-print("\nBehavior Classification Summary:")
-print(summary)
+# Create the plot with connected dots for each participant
+plt.figure(figsize=(8, 6))
+sns.scatterplot(
+    data=pivot_table,
+    x="Up",
+    y="Down",
+    hue="proba",
+    palette="viridis",
+    style="proba",
+    markers=["o", "s", "D", "^", "v"],
+    s=50,
+)
+# Connect dots for each participant
+for sub in pivot_table["sub"].unique():
+    subset = pivot_table[pivot_table["sub"] == sub]
+    plt.plot(subset["Up"], subset["Down"], color="gray", alpha=0.5, linestyle="--")
+# Add plot formatting
+plt.axhline(0, color="black", linestyle="--")
+plt.axvline(0, color="black", linestyle="--")
+plt.title("Participants adaptaion across probabilites")
+plt.xlabel("up")
+plt.ylabel("down")
+plt.ylim(-4, 4)
+plt.xlim(-4, 4)
+plt.legend(title="proba")
+plt.tight_layout()
+#plt.show()
+#plt.show()
+# %%
+# Connect dots for each participant
+for sub in pivot_table["sub"].unique():
+    subset = pivot_table[pivot_table["sub"] == sub]
+    plt.plot(subset["Up"], subset["Down"], color="gray", alpha=0.5, linestyle="--")
+    sns.scatterplot(
+        data=pivot_table[pivot_table["sub"] == sub],
+        x="Up",
+        y="Down",
+        hue="proba",
+        palette="viridis",
+        style="proba",
+        markers=["o", "s", "D"],
+    )
+    # Add plot formatting
+    plt.axhline(0, color="black", linestyle="--")
+    plt.axvline(0, color="black", linestyle="--")
+    plt.title(f"Participant:{sub}")
+    plt.xlabel("up")
+    plt.ylabel("down")
+    plt.legend(title="proba")
+    plt.tight_layout()
+    #plt.show()
+# %%
+# Group by 'sub', 'proba', and 'color' and calculate the mean of 'aSPv'
+mean_velo = df.groupby(["sub", "proba", "interaction"])["aSPv"].mean().reset_index()
+print(mean_velo)
+mean_velo["interaction"] = mean_velo["interaction"].astype("str")
+# %%
+# Pivot the table to have 'proba' as columns
+pivot_table = mean_velo.pivot_table(
+    index=["sub", "proba"], columns="interaction", values="aSPv"
+).reset_index()
+
+# Calculate the adaptation
+# pivot_table["adaptation"] = (
+#     np.abs(pivot_table["green"]) + np.abs(pivot_table["red"])
+# ) / 2
+
+print(pivot_table)
+pivot_table = pd.DataFrame(pivot_table)
+pivot_table.columns
+# %%
+pivot_table.columns[2]
+# %%
+# pivot_table.rename(
+#     columns={
+#         ('left', 'green'): "left_green",
+#         ('left', 'red'): "left_red",
+#         ('right', 'green'): "right_green",
+#         ('right', 'red'): "right_red",
+#     },
+#     inplace=True,
+# )
+#
+# pivot_table.columns
+# %%
+sns.scatterplot(
+    data=pivot_table, x="('right', 'up')", y="('right', 'down')", hue="proba"
+)
+# Or alternatively
+plt.axhline(y=0, color="k", linestyle="--")  # Horizontal line at y=0
+plt.axvline(x=0, color="k", linestyle="--")  # Vertical line at x=0
+plt.xlim(-2.5, 2.5)
+plt.ylim(-2.5, 2.5)
+#plt.show()
 # %%

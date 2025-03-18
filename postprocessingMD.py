@@ -4,25 +4,15 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
-from matplotlib.backends.backend_pdf import PdfPages
-
-from functions.utils import *
-from ANEMO.ANEMO import ANEMO, read_edf
-from functions.utils import *
-
+import traceback
 import warnings
 
 warnings.filterwarnings("ignore")
-import traceback
 
 plt.rcParams["figure.facecolor"] = "white"
 plt.rcParams["axes.facecolor"] = "white"
 
-import warnings
-
 warnings.filterwarnings("ignore")
-import traceback
 
 # %% Parameters
 # run always
@@ -64,6 +54,21 @@ conditions = [
     "c3",
 ]
 
+conds_by_sub=dict(
+    {   
+    "sub-001":["c1", "c2", "c3"],
+    "sub-002":["c1", "c2", "c3"],
+    "sub-003":["c1", "c2", "c3"],
+    "sub-004":["c1", "c2", "c3"],
+    "sub-005":["c1", "c2", "c3"],
+    "sub-006":["c1", "c2", "c3"],
+    "sub-007":["c1", "c2", "c3"],
+    "sub-008":["c1", "c2", "c3"],
+    "sub-009":["c1", "c2", "c3"],
+    "sub-010":["c1", "c2", "c3"],
+    "sub-011":["c4", "c5", "c6"],
+     }
+)
 
 # %% Transform raw data
 # (also save to the same file, under a different folder...
@@ -98,7 +103,7 @@ for sub in subjects:
 
     subNumber = int(sub.split("-")[1])
     temp = pd.DataFrame()
-    for cond in conditions:
+    for cond in conds_by_sub[sub]:
         print(cond)
         try:
             # read data
@@ -157,7 +162,7 @@ for sub in subjects:
             data[int_keys] = data[int_keys].astype(int)
 
             data.to_hdf(h5_rawfile, "rawFormatted")
-        except Exception as e:
+        except Exception:
             print("Error! \n Couldn't process {}, condition {}".format(sub, cond))
             traceback.print_exc()
 
@@ -184,7 +189,7 @@ for sub in subjects:
 
     subNumber = int(sub.split("-")[1])
     tempDF = pd.DataFrame()
-    for cond in conditions:
+    for cond in conds_by_sub[sub]:
         try:
             h5_file = "{sub}/CP_s{subNumber}{cond}_posFilter.h5".format(
                 sub=sub, subNumber=subNumber, cond=cond
@@ -195,7 +200,7 @@ for sub in subjects:
             tempDF = pd.concat([tempDF, temp_tmp], ignore_index=True)
             # if you do a manual quality check, you should exclude the bad trials here
 
-        except Exception as e:
+        except Exception:
             print("Error! \n Couldn't process {}, condition {}".format(sub, cond))
             traceback.print_exc()
 
