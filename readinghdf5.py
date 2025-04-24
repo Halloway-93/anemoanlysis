@@ -3,12 +3,12 @@ import h5py
 
 import matplotlib.pyplot as plt
 
+# %%
+# df.session
 df = pd.read_hdf(
     "/Users/mango/oueld.h/contextuaLearning/motionDirectionCue/sub-001/CP_s1c3_rawData.h5",
     "data",
 )
-# %%
-# df.session
 # %%
 df.columns
 # %%
@@ -21,7 +21,7 @@ plt.plot(df.time[0], df.velocity_x[0])
 plt.plot(df.time[0], df.velocity_y[0])
 plt.show()
 # %%
-file = "/Volumes/hpc_home/oueld.h/MD/s11_CP_rawData.h5"
+file = "/Volumes/hpc_home/oueld.h/MD/s10_CP_rawData.h5"
 # Open the HDF5 file
 with h5py.File(file, "r") as f:
     # Get keys at the root level
@@ -39,7 +39,7 @@ with h5py.File(file, "r") as f:
 df = pd.read_hdf(file, "rawFormatted")
 df.columns
 # %%
-df[df.new_cond.isin([4,5,6])][ ["new_cond",'condition'] ]
+df[df.new_cond.isin([4,5,6])][ ["new_cond",'condition'] ].value_counts()
 # %%
 df
 # %%
