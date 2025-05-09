@@ -1,14 +1,10 @@
 import os
-import sys
-import h5py
-import time as timer
 import numpy as np
 import pandas as pd
 from functions.utils import *
 from ANEMO.ANEMO import ANEMO, read_edf
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-import scipy
 import multiprocessing as mp
 from functools import partial
 import warnings
@@ -268,13 +264,13 @@ def process_trial(
             newTargetOnset = np.where(time == 0)[0][0]
 
             if (
-                np.mean(np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100]))
-                > 0.7
-                or np.mean(np.isnan(vel_x[:-time_sup])) > 0.5
-                or longestNanRun(vel_x[newTargetOnset - 150 : newTargetOnset + 600])
-                > 200
-                or abs(np.nanmean(vel_x[newTargetOnset + 300 : newTargetOnset + 600]))
-                < 4
+                np.mean(np.isnan(vel_x[newTargetOnset - 200 : newTargetOnset + 100]))
+                > 0.3
+                or np.mean(np.isnan(vel_x[:-time_sup])) > 0.7
+                or longestNanRun(vel_x[newTargetOnset - 200 : newTargetOnset + 100])
+                > 100
+                # or abs(np.nanmean(vel_x[newTargetOnset + 300 : newTargetOnset + 600]))
+                # < 4
             ):
                 print("Skipping bad trial...")
 
@@ -301,20 +297,20 @@ def process_trial(
 
                 if (
                     np.mean(
-                        np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])
+                        np.isnan(vel_x[newTargetOnset - 200 : newTargetOnset + 100])
                     )
-                    > 0.7
+                    > 0.3
                 ):
                     print("too many NaNs around the start of the pursuit")
-                    reason = reason + " >.70 of NaNs around the start of the pursuit"
+                    reason = reason + " >.30 of NaNs around the start of the pursuit"
                     nanOnsetpdf.savefig(fig)
-                if np.mean(np.isnan(vel_x[:-time_sup])) > 0.6:
+                if np.mean(np.isnan(vel_x[:-time_sup])) > 0.7:
                     print("too many NaNs overall")
                     reason = reason + f" >{0.6} of NaNs overall"
                     nanOverallpdf.savefig(fig)
                 if (
-                    longestNanRun(vel_x[newTargetOnset - 150 : newTargetOnset + 600])
-                    > 200
+                    longestNanRun(vel_x[newTargetOnset - 200 : newTargetOnset + 100])
+                    > 100
                 ):
                     print("at least one nan sequence with more than 200ms")
                     reason = reason + " At least one nan sequence with more than 200ms"
@@ -530,7 +526,7 @@ def process_trial(
 
         return None  # Return None if there's no data for this trial
 
-    except Exception as e:
+    except Exception:
         print(f"Error processing trial {trial} for {sub}, condition {cond}")
         traceback.print_exc()
         return None
@@ -652,7 +648,7 @@ def process_condition(sub, cond, main_dir):
 
         return True
 
-    except Exception as e:
+    except Exception:
         print(f"Error! Couldn't process {sub}, condition {cond}")
         traceback.print_exc()
         return False

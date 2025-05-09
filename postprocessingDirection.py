@@ -13,10 +13,8 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 import re
 from functions.utils import *
-from ANEMO.ANEMO import ANEMO, read_edf
 from functions.utils import *
 
 
@@ -209,7 +207,7 @@ for idxSub, sub in enumerate(subjects):
 
             print(data)
             data.to_hdf(h5_rawfile, "rawFormatted")
-        except Exception as e:
+        except Exception:
             print("Error! \n Couldn't process {}, condition {}".format(sub, session))
             traceback.print_exc()
 
@@ -253,7 +251,7 @@ for idxSub, sub in enumerate(subjects):
             tempDF = pd.concat([tempDF, temp], ignore_index=True)
             # if you do a manual quality check, you should exclude the bad trials here
 
-        except Exception as e:
+        except Exception:
             print("Error! \n Couldn't process {}, condition {}".format(sub, session))
             traceback.print_exc()
 

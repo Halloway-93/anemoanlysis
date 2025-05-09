@@ -14,11 +14,8 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
-from matplotlib.backends.backend_pdf import PdfPages
 
 from functions.utils import *
-from ANEMO.ANEMO import ANEMO, read_edf
 from functions.utils import *
 
 plt.rcParams["figure.facecolor"] = "white"
@@ -46,7 +43,6 @@ plt.rcParams["axes.facecolor"] = "white"
 import warnings
 
 warnings.filterwarnings("ignore")
-import traceback
 
 # run always
 screen_width_px = 1920  # px
@@ -210,7 +206,7 @@ for sub in subjects:
             data[int_keys] = data[int_keys].astype(int)
 
             data.to_hdf(h5_rawfile, "rawFormatted")
-        except Exception as e:
+        except Exception:
             print("Error! \n Couldn't process {}, condition {}".format(sub, cond))
             traceback.print_exc()
 
@@ -244,7 +240,7 @@ for sub in subjects:
             tempDF = pd.concat([tempDF, temp_tmp], ignore_index=True)
             # if you do a manual quality check, you should exclude the bad trials here
 
-        except Exception as e:
+        except Exception:
             print("Error! \n Couldn't process {}, condition {}".format(sub, cond))
             traceback.print_exc()
 

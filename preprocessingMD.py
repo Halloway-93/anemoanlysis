@@ -395,20 +395,20 @@ for idxSub, sub in enumerate(subjects):
 
                     if (
                         np.mean(
-                            np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])
+                            np.isnan(vel_x[newTargetOnset - 50 : newTargetOnset + 50])
                         )
-                        > 0.7
-                        or np.mean(np.isnan(vel_x[:-time_sup])) > 0.5
+                        > 0.3
+                        or np.mean(np.isnan(vel_x[:-time_sup])) > 0.7
                         or longestNanRun(
-                            vel_x[newTargetOnset - 150 : newTargetOnset + 600]
+                            vel_x[newTargetOnset - 200 : newTargetOnset +100]
                         )
-                        > 200
-                        or abs(
-                            np.nanmean(
-                                vel_x[newTargetOnset + 300 : newTargetOnset + 600]
-                            )
-                        )
-                        < 4
+                        > 100
+                        # or abs(
+                        #     np.nanmean(
+                        #         vel_x[newTargetOnset + 300 : newTargetOnset + 600]
+                        #     )
+                        # )
+                        # < 4
                         # or abs(np.nanmean(vel_x[TargetOnIndex : TargetOnIndex + 100])) > 8
                     ):
 
@@ -446,25 +446,25 @@ for idxSub, sub in enumerate(subjects):
                         if (
                             np.mean(
                                 np.isnan(
-                                    vel_x[newTargetOnset - 100 : newTargetOnset + 100]
+                                    vel_x[newTargetOnset - 50 : newTargetOnset + 50]
                                 )
                             )
-                            > 0.7
+                            > 0.3
                         ):
                             print("too many NaNs around the start of the pursuit")
                             reason = (
-                                reason + " >.70 of NaNs around the start of the pursuit"
+                                reason + " >.30 of NaNs around the start of the pursuit"
                             )
                             nanOnsetpdf.savefig(fig)
-                        if np.mean(np.isnan(vel_x[:-time_sup])) > 0.6:
+                        if np.mean(np.isnan(vel_x[:-time_sup])) > 0.7:
                             print("too many NaNs overall")
                             reason = reason + " >{0} of NaNs overall".format(0.6)
                             nanOverallpdf.savefig(fig)
                         if (
                             longestNanRun(
-                                vel_x[newTargetOnset - 150 : newTargetOnset + 600]
+                                vel_x[newTargetOnset - 200 : newTargetOnset + 100]
                             )
-                            > 200
+                            > 100
                         ):
                             print("at least one nan sequence with more than 200ms")
                             reason = (

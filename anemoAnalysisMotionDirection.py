@@ -343,7 +343,7 @@ sns.pointplot(
     x="proba",
     y="aSPv",
     capsize=0.1,
-    n_boot=1000,
+    n_boot=10000,
     errorbar="se",
     hue="firstSeg",
     hue_order=["Down", "Up"],
@@ -368,7 +368,7 @@ sns.catplot(
     gap=0.1,
     # inner="stick",
     height=10,
-    cut=0,
+    cut=0.9,
 )
 # _ = plt.title("Horizontal aSPv Across Probabilities", fontsize=30)
 plt.legend(title="firstSeg", fontsize=20, title_fontsize=20)
@@ -404,39 +404,6 @@ plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 plt.savefig(pathFig + "/individualsUPFullProba.png",dpi=300, transparent=True)
 plt.show()
 # %%
-sns.lmplot(
-    data=dd[dd.firstSeg == "Up"],
-    x="proba",
-    y="aSPv",
-    hue="sub",
-    palette="tab20",
-    height=10,
-)
-_ = plt.title("Horizontal aSPv Per Subject: firstSeg UP", fontsize=30)
-plt.xlabel(r"$\mathbb{P}$(Right|UP)", fontsize=30)
-plt.xticks(fontsize=20)
-plt.yticks(fontsize=20)
-plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsUPFullProba.png",dpi=300, transparent=True)
-plt.show()
-# %%
-sns.lmplot(
-    data=dd[dd.firstSeg == "Down"],
-    x="proba",
-    y="aSPv",
-    hue="sub",
-    palette="tab20",
-    height=10,
-)
-_ = plt.title("Horizontal aSPv Per Subject: firstSeg UP", fontsize=30)
-plt.xlabel(r"$\mathbb{P}$(Left|DOWN)", fontsize=30)
-plt.xticks(fontsize=20)
-plt.yticks(fontsize=20)
-plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
-plt.tight_layout()
-plt.savefig(pathFig + "/individualsUPFullProba.png",dpi=300, transparent=True)
-plt.show()
-# %%
 fig = plt.figure()
 # Toggle full screen mode
 figManager = plt.get_current_fig_manager()
@@ -461,15 +428,122 @@ plt.savefig(pathFig + "/individualsDOWNFullProba.png",dpi=300, transparent=True)
 plt.show()
 # %%
 model = smf.mixedlm(
-    "aSPv~C( firstSeg )*C( proba,Treatment(0.5) )",
+    "aSPv~ proba*firstSeg",
     data=df,
-    re_formula="~proba",
+    re_formula="~proba*firstSeg",
     groups=df["sub"],
 ).fit()
 model.summary()
 # %%
+# Extract fixed effects
+fe = model.fe_params
+base_slope = fe['proba']  # base slope (Down)
+interaction = fe['proba:firstSeg[T.Up]']  # additional slope for Up
+
+# Extract random effects
+re_dict = model.random_effects
+
+# Create an empty dataframe for subject-specific slopes
+participant_slopes = []
+
+# Loop through each subject
+for sub, re in re_dict.items():
+    # The random effects order depends on the model specification
+    # Typically for re_formula="~proba*color"
+    # The order is [intercept, color, proba, proba:color]
+    
+    proba_re = re[2]  # Random effect for proba (green condition)
+    interaction_re = re[3]  # Random effect for proba:color interaction
+    
+    down_slope = base_slope + proba_re
+    up_slope = base_slope + interaction + proba_re + interaction_re
+    
+    participant_slopes.append({
+        'sub': sub,
+        'down_slope': down_slope,
+        'up_slope': up_slope,
+        'avg_abs_slope': (abs(down_slope) + abs(up_slope)) / 2
+    })
+
+# Convert to dataframe
+participant_slopes_df = pd.DataFrame(participant_slopes)
+print(participant_slopes_df)
+# %%
+# Extract slope values for up and down
+
+green_slopes = participant_slopes_df['down_slope'].values
+red_slopes =  participant_slopes_df['up_slope'].values
+
+# Create scatter plot
+plt.figure(figsize=(8, 8))  # Square figure for equal axes
+plt.scatter(x=green_slopes, y=red_slopes, alpha=0.7)
+
+# Calculate linear regression
+slope, intercept, r_value, p_value, std_err = stats.linregress(green_slopes, red_slopes)
+
+# Find the range for both axes to center around 0
+all_values = np.concatenate([green_slopes, red_slopes])
+max_abs_val = max(abs(all_values.min()), abs(all_values.max()))
+axis_limit = max_abs_val * 1.1  # Add 10% margin
+
+# Set equal limits centered on 0
+plt.xlim(-axis_limit, axis_limit)
+plt.ylim(-axis_limit, axis_limit)
+
+# Create x values for the regression line
+x_line = np.linspace(-axis_limit, axis_limit, 100)
+
+# Calculate corresponding y values for regression line
+y_line = slope * x_line + intercept
+
+# Plot the regression line
+plt.plot(
+    x_line,
+    y_line,
+    color="red",
+    linestyle="--",
+    label=f"Regression: y = {slope:.3f}x + {intercept:.3f}",
+)
+
+# Add x=y line
+plt.plot(
+    [-axis_limit, axis_limit],
+    [axis_limit, -axis_limit],
+    "k-",
+    alpha=0.5,
+    label="x = -y",
+)
+
+# Add text with regression parameters
+plt.annotate(
+    f"y = {slope:.3f}x + {intercept:.3f}\nR² = {r_value**2:.3f}, p = {p_value:.3f}",
+    xy=(0.05, 0.95),
+    xycoords="axes fraction",
+    bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.8),
+)
+
+# Add reference lines at x=0 and y=0
+plt.axhline(y=0, color="gray", linestyle="-", alpha=0.3)
+plt.axvline(x=0, color="gray", linestyle="-", alpha=0.3)
+
+# Add labels and title
+plt.xlabel("Adaptive Slope for Down")
+plt.ylabel("Adaptive Slope for Up")
+# plt.title("Relationship Between Green and Red Condition Slopes")
+plt.grid(True, alpha=0.3)
+plt.legend(loc="lower right")
+
+# Make axes equal
+plt.axis("equal")
+
+# Show plot
+plt.tight_layout()
+plt.savefig(pathFig + "/linearRegressionSlopesFullProba.png",dpi=300, transparent=True)
+plt.show()
+
+# %%
 model = smf.mixedlm(
-    "aSPv~C( firstSeg )",
+    "aSPv~firstSeg",
     data=df[df.proba == 0.75],
     re_formula="~firstSeg",
     groups=df[df.proba == 0.75]["sub"],
@@ -478,7 +552,7 @@ model.summary()
 
 # %%
 model = smf.mixedlm(
-    "aSPv~C( firstSeg )",
+    "aSPv~firstSeg",
     data=df[df.proba == 0.25],
     re_formula="~firstSeg",
     groups=df[df.proba == 0.25]["sub"],
@@ -495,7 +569,7 @@ model.summary()
 
 # %%
 model = smf.mixedlm(
-    "aSPv~ C(proba,Treatment(0.5))",
+    "aSPv~ proba",
     data=df[df.firstSeg == "Up"],
     re_formula="~proba",
     groups=df[df.firstSeg == "Up"]["sub"],
@@ -504,7 +578,7 @@ model.summary()
 
 # %%
 model = smf.mixedlm(
-    "aSPv~ C(proba,Treatment(0.5))",
+    "aSPv~ proba",
     data=df[df.firstSeg == "Down"],
     re_formula="~proba",
     groups=df[df.firstSeg == "Down"]["sub"],
@@ -516,17 +590,7 @@ downfirstSegsPalette = ["#0F68A9", "#A2D9FF"]
 upfirstSegsPalette = ["#FAAE7B", "#FFD699"]
 dd = df.groupby(["sub", "firstSeg", "proba"])[["aSPv"]].mean().reset_index()
 # %%
-sns.lineplot(
-    x="proba",
-    y="aSPv",
-    hue="firstSeg",
-    data=dd,
-    palette=[downfirstSegsPalette[0], upfirstSegsPalette[0]],
-    # alpha=0.5,
-    # legend=False,
-    )
-plt.show()
-# %%
+sns.set_context(context='paper')
 # fig = plt.figure()
 # # Toggle full screen mode
 # figManager = plt.get_current_fig_manager()
@@ -594,6 +658,80 @@ plt.show()
 # figManager.full_screen_toggle()
 g=sns.catplot(
     data=df,
+    x="firstSeg",
+    y="aSPv",
+    hue="proba",
+    kind="bar",
+    errorbar=("ci", 95),
+    # errorbar='se',
+    n_boot=10000,
+    height=10,  # Set the height of the figure
+    aspect=1.5,
+    capsize=0.1,
+    hue_order=[0.25,0.5,0.75],
+    fill=False,
+    legend=False,
+    palette='viridis',
+)
+
+sns.stripplot(
+    x="firstSeg",
+    y="aSPv",
+    hue="proba",
+    data=dd,
+    dodge=True,
+    palette='viridis',
+    jitter=True,
+    size=6,
+    linewidth=1,
+    # alpha=0.5,
+    # legend=False,
+)
+hue_order=[0.25,0.5,0.75]
+order=["Down", "Up"]
+pairs = [
+    (("Down",0.25), ('Down',0.50)),
+    (("Down",0.75), ('Down',0.50)),
+    (("Down",0.25), ('Down',0.75)),
+
+    (("Up",0.25), ('Up',0.50)),
+    (("Up",0.75), ('Up',0.50)),
+    (("Up",0.25), ('Up',0.75)),
+
+    # (("Down",0.25), ('Up',0.25)),
+    # (("Down",0.5), ('Up',0.50)),
+    # (("Down",0.75), ('Up',0.75)),
+]
+annotator = Annotator(g.ax, pairs, data=dd, x='firstSeg', y="aSPv", hue="proba",hue_order=hue_order, order=order)
+annotator.configure(test='t-test_paired',  loc='outside',fontsize=20,comparisons_correction='HB')
+annotator.apply_and_annotate()
+# plt.title("Horizontal aSPv Across 5 Probabilities", fontsize=30)
+plt.xlabel(r"Cue", fontsize=25)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=25)
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+
+viridis_colors = plt.cm.viridis([0, 0.5, 1])  # Maps to your 0.25, 0.50, 0.75 proba values
+
+legend_elements = [
+    Patch(facecolor=viridis_colors[0], edgecolor='black', label='0.25'),
+    Patch(facecolor=viridis_colors[1], edgecolor='black', label='0.50'),
+    Patch(facecolor=viridis_colors[2], edgecolor='black', label='0.75')
+]
+g.ax.legend(
+    handles=legend_elements, fontsize=20, title=r"$\mathbb{P}$(Right|Up)=$\mathbb{P}$(Left|Down)", title_fontsize=20
+)
+plt.tight_layout()
+plt.savefig(pathFig + "/aSPvfirstSegsFullProbabis.png",dpi=300, transparent=True)
+plt.show()
+# %%
+
+# fig = plt.figure()
+# # Toggle full screen mode
+# figManager = plt.get_current_fig_manager()
+# figManager.full_screen_toggle()
+g=sns.catplot(
+    data=df,
     x="proba",
     y="aSPv",
     hue="firstSeg",
@@ -609,24 +747,6 @@ g=sns.catplot(
     legend=False,
     palette=[downfirstSegsPalette[0], upfirstSegsPalette[0]],
 )
-# sns.lineplot(
-#     x="proba",
-#     y="aSPv",
-#     hue="firstSeg",
-#     # kind="point",
-#     # errorbar=("ci", 95),
-#     # errorbar='se',
-#     n_boot=1000,
-#     # height=10,  # Set the height of the figure
-#     # aspect=1.5,
-#     # capsize=0.1,
-#     hue_order=["Down", "Up"],
-#     data=dd,
-#     legend=False,
-#     palette=[downfirstSegsPalette[0], upfirstSegsPalette[0]],
-#     ax=g.ax,
-#     alpha=0.3
-# )
 sns.stripplot(
     x="proba",
     y="aSPv",
@@ -653,7 +773,7 @@ pairs = [
 
 ]
 annotator = Annotator(g.ax, pairs, data=dd, x='proba', y="aSPv", hue="firstSeg",hue_order=hue_order, order=order)
-annotator.configure(test='t-test_paired', text_format='star', loc='outside',comparisons_correction="HB")
+annotator.configure(test='t-test_paired',  loc='outside',fontsize=20)
 annotator.apply_and_annotate()
 # plt.title("Horizontal aSPv Across 5 Probabilities", fontsize=30)
 plt.xlabel(r"$\mathbb{P}$(Right|Up)=$\mathbb{P}$(Left|Down)", fontsize=25)
@@ -670,7 +790,6 @@ g.ax.legend(
 plt.tight_layout()
 plt.savefig(pathFig + "/aSPvfirstSegsFullProba.png",dpi=300, transparent=True)
 plt.show()
-# %%
 # %%
 downfirstSegsPalette = ["#0F68A9", "#A2D9FF"]
 upfirstSegsPalette = ["#FAAE7B", "#FFD699"]
@@ -844,7 +963,7 @@ pairs = [
 
 ]
 annotator = Annotator(g.ax, pairs,data=dd[dd.firstSeg == "Down"],x='proba', y="aSPv", hue="TD_prev",hue_order=hue_order, order=order)
-annotator.configure(test='t-test_paired', text_format='star', loc='outside',comparisons_correction="BH")
+annotator.configure(test='t-test_paired', text_format='star', loc='outside',fontsize=20)
 annotator.apply_and_annotate()
 plt.tight_layout()
 plt.savefig(pathFig + "/aSPvdownTDFullProba.png",dpi=300, transparent=True)
@@ -916,14 +1035,14 @@ pairs = [
     ((0.25, "left"), (0.25, "right")),
     ((0.5, "left"), (0.5, "right")),
     ((0.75, "left"), (0.75, "right")),
-    ((0.25, "left"), (0.5, "left")),
-    ((0.75, "left"), (0.5, "left")),
-    ((0.25, "right"), (0.5, "right")),
-    ((0.75, "right"), (0.5, "right"))
+    # ((0.25, "left"), (0.5, "left")),
+    # ((0.75, "left"), (0.5, "left")),
+    # ((0.25, "right"), (0.5, "right")),
+    # ((0.75, "right"), (0.5, "right"))
 
 ]
 annotator = Annotator(g.ax, pairs,data=dd[dd.firstSeg == "Up"],x='proba', y="aSPv", hue="TD_prev",hue_order=hue_order, order=order)
-annotator.configure(test='t-test_paired', text_format='star', loc='outside',comparisons_correction="BH")
+annotator.configure(test='t-test_paired', text_format='star', loc='outside',fontsize=20)
 annotator.apply_and_annotate()
 plt.tight_layout()
 plt.savefig(pathFig + "/aSPvupTDFullProba.png",dpi=300, transparent=True)
@@ -956,10 +1075,129 @@ df_prime.groupby(["proba", "interaction", "firstSeg"]).count()[["aSPv"]]
 # %%
 print(learningCurveInteraction)
 # %%
+# interaction Differences:
+intDiffUp=learningCurveInteraction[learningCurveInteraction['firstSeg']=='Up']
+intDiffDown=learningCurveInteraction[learningCurveInteraction['firstSeg']=='Down']
+intDiffDown
+# %%
+interDownaSPvDown=intDiffDown[intDiffDown['interaction']==('right','down')]['aSPv'].values-intDiffDown[intDiffDown['interaction']==('left','down')]['aSPv'].values
+interDownaSPvUp=intDiffDown[intDiffDown['interaction']==('right','up')]['aSPv'].values-intDiffDown[intDiffDown['interaction']==('left','up')]['aSPv'].values
+interDownaSPvDown
+# %%
+interUpaSPvUp=intDiffUp[intDiffUp['interaction']==('right','up')]['aSPv'].values-intDiffUp[intDiffUp['interaction']==('left','up')]['aSPv'].values
+interUpaSPvDown=intDiffUp[intDiffUp['interaction']==('right','down')]['aSPv'].values-intDiffUp[intDiffUp['interaction']==('left','down')]['aSPv'].values
+interUpaSPvUp
+# %%
+interUp=intDiffUp[intDiffUp['interaction']==('right','up')][['sub','proba','firstSeg']].reset_index()
+# %%
+interUp.drop(columns=['index'],inplace=True)
+interUp['Down_Diff']=interUpaSPvDown
+interUp['Up_Diff']=interUpaSPvUp
+
+interUp
+# %%
+interDown=intDiffDown[intDiffDown['interaction']==('right','down')][['sub','proba','firstSeg']].reset_index()
+# %%
+interDown.drop(columns=['index'],inplace=True)
+interDown['Up_Diff']=interDownaSPvUp
+interDown['Down_Diff']=interDownaSPvDown
+interDown
+# %%
+interDiff=pd.concat([interDown,interUp],axis=0)
+interDiff.reset_index(inplace=True)
+interDiff.drop(columns=['index'],inplace=True)
+interDiff
+# %%
+ttest_results = pg.ttest(
+    x=interDiff[(interDiff['firstSeg']=='Up')& (interDiff['proba']==0.25)]["Up_Diff"].values,
+    y=interDiff[(interDiff['firstSeg']=='Up')& (interDiff['proba']==0.25)]["Down_Diff"].values,
+    paired=True,
+)
+print(ttest_results)
+
+# %%
+df_long = pd.melt(
+    interDiff,
+    id_vars=['sub', 'proba', 'firstSeg'],
+    value_vars=['Up_Diff', 'Down_Diff'],
+    var_name='temp',
+    value_name='aSPv'
+)
+
+# Extract the direction from the 'temp' column (remove '_Diff' from the column names)
+df_long['Diff'] = df_long['temp'].str.replace('_Diff', '')
+df_long = df_long.drop('temp', axis=1)
+
+df_long = df_long[['sub', 'proba', 'firstSeg', 'Diff', 'aSPv']]
+
+# Display the transformed dataframe
+print("Transformed dataframe:")
+print(df_long)
+
+# %%
+g=sns.catplot(
+    data=df_long[df_long['firstSeg']=='Up'],
+    x="proba",
+    y="aSPv",
+    hue="Diff",
+    kind="bar",
+    errorbar=("ci", 95),
+    # errorbar='se',
+    n_boot=1000,
+    height=10,  # Set the height of the figure
+    aspect=1.5,
+    capsize=0.1,
+    hue_order=["Down", "Up"],
+    fill=False,
+    legend=False,
+    palette=[downfirstSegsPalette[0], upfirstSegsPalette[0]],
+)
+sns.stripplot(
+    data=df_long[df_long['firstSeg']=='Up'],
+    x="proba",
+    y="aSPv",
+    hue="Diff",
+    hue_order=["Down", "Up"],
+    dodge=True,
+    palette=[downfirstSegsPalette[0], upfirstSegsPalette[0]],
+    jitter=True,
+    size=6,
+    linewidth=1,
+)
+order=[0.25,0.5,0.75]
+hue_order=["Down", "Up"]
+pairs = [
+    ((0.25, "Down"), (0.25, "Up")),
+    ((0.5, "Down"), (0.5, "Up")),
+    ((0.75, "Down"), (0.75, "Up")),
+
+]
+annotator = Annotator(g.ax, pairs,data=df_long[df_long['firstSeg']=='Up'], x='proba', y="aSPv", hue="Diff",hue_order=hue_order, order=order)
+annotator.configure(test='t-test_paired',  loc='outside',fontsize=20)
+annotator.apply_and_annotate()
+# plt.title("Horizontal aSPv Across 5 Probabilities", fontsize=30)
+plt.xlabel(r"$\mathbb{P}$(Right|Up)=$\mathbb{P}$(Left|Down)", fontsize=25)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=25)
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+legend_elements = [
+    Patch(facecolor=downfirstSegsPalette[0], alpha=1, label="Down"),
+    Patch(facecolor=upfirstSegsPalette[0], alpha=1, label="Up"),
+]
+g.ax.legend(
+    handles=legend_elements, fontsize=20, title="Diff", title_fontsize=20
+)
+plt.tight_layout()
+plt.savefig(pathFig + "/aSPvinterDiffUp.png",dpi=300, transparent=True)
+plt.show()
+# %%
+
+# %%
 learningCurveInteraction[
     learningCurveInteraction["aSPv"] == learningCurveInteraction["aSPv"].max()
 ]
 # %%
+
 df["interaction"].unique()
 # %%
 hue_order = [
@@ -988,6 +1226,32 @@ g = sns.catplot(
     legend=False,
 )
 
+order=[0.25,0.5,0.75]
+pairs = [
+    ((0.25, ( "left","down" )), (0.25, ( "right","down" ))),
+    ((0.5,( "left","down" )), (0.5, ( "right","down" ))),
+    ((0.75, ( "left","down" )), (0.75, ( "right","down" ))),
+    ((0.25, ( "left","up" )), (0.25, ( "right","up" ))),
+    ((0.5,( "left","up" )), (0.5, ( "right","up" ))),
+    ((0.75, ( "left","up" )), (0.75, ( "right","up" ))),
+
+    ((0.25, ( "left","up" )), (0.25, ( "left","down" ))),
+    ((0.5,( "left","up" )), (0.5, ( "left","down" ))),
+    ((0.75, ( "left","up" )), (0.75, ( "left","down" ))),
+    ((0.25, ( "right","up" )), (0.25, ( "right","down" ))),
+    ((0.5,( "right","up" )), (0.5, ( "right","down" ))),
+    ((0.75, ( "right","up" )), (0.75, ( "right","down" ))),
+
+    ((0.25, ( "left","up" )), (0.25, ( "right","down" ))),
+    ((0.5,( "left","up" )), (0.5, ( "right","down" ))),
+    ((0.75, ( "left","up" )), (0.75, ( "right","down" ))),
+    ((0.25, ( "right","up" )), (0.25, ( "left","down" ))),
+    ((0.5,( "right","up" )), (0.5, ( "left","down" ))),
+    ((0.75, ( "right","up" )), (0.75, ( "left","down" ))),
+]
+annotator = Annotator(g.ax, pairs, data=learningCurveInteraction[learningCurveInteraction.firstSeg == "Up"],x='proba', y="aSPv", hue="interaction",hue_order=hue_order, order=order)
+annotator.configure(test='t-test_paired', text_format='star', loc='outside',comparisons_correction="BH",fontsize=15)
+annotator.apply_and_annotate()
 # Determine the number of bars per x-value
 n_categories = len(df_prime["interaction"].unique())
 n_x_values = len(df_prime["proba"].unique())
@@ -1003,6 +1267,7 @@ for i, bar in enumerate(g.ax.patches):
 
 # Add stripplot
 sns.stripplot(
+    data=learningCurveInteraction[learningCurveInteraction.firstSeg == "Up"],
     x="proba",
     y="aSPv",
     hue="interaction",
@@ -1013,27 +1278,26 @@ sns.stripplot(
     marker="o",
     linewidth=1,
     size=6,
-    data=learningCurveInteraction[learningCurveInteraction.firstSeg == "Up"],
     # legend=False,
 )
 #
 # # Create custom legend with all four categories
 legend_elements = [
     # Left categories (solid fill)
-    Patch(facecolor=colorsPalettes[0], alpha=1, label="Left, Down"),
-    Patch(facecolor=colorsPalettes[1], alpha=1, label="Left, Up"),
+    Patch(facecolor=colorsPalettes[0], alpha=1, label="Down, Left"),
+    Patch(facecolor=colorsPalettes[1], alpha=1, label="Up, Left"),
     # Right categories (hatched)
     Patch(
         facecolor="none",
         hatch="///",
         edgecolor=colorsPalettes[0],
-        label="Right, Down",
+        label="Down, Right",
     ),
     Patch(
         facecolor="none",
         hatch="///",
         edgecolor=colorsPalettes[1],
-        label="Right, Up",
+        label="Up, Right",
     ),
 ]
 
@@ -1043,7 +1307,7 @@ g.ax.legend(
 )
 
 # Customize the plot
-g.ax.set_title("Up Trials:\n Previous TD and its firstSeg", fontsize=30)
+# g.ax.set_title("Up Trials:\n Previous TD and its firstSeg", fontsize=30)
 g.ax.set_ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 g.ax.set_xlabel(r"$\mathbb{P}$(Right|Up)", fontsize=30)
 g.ax.tick_params(labelsize=25)
@@ -1070,6 +1334,32 @@ g = sns.catplot(
     hue_order=hue_order,
     legend=False,
 )
+order=[0.25,0.5,0.75]
+pairs = [
+    ((0.25, ( "left","down" )), (0.25, ( "right","down" ))),
+    ((0.5,( "left","down" )), (0.5, ( "right","down" ))),
+    ((0.75, ( "left","down" )), (0.75, ( "right","down" ))),
+    ((0.25, ( "left","up" )), (0.25, ( "right","up" ))),
+    ((0.5,( "left","up" )), (0.5, ( "right","up" ))),
+    ((0.75, ( "left","up" )), (0.75, ( "right","up" ))),
+
+    ((0.25, ( "left","up" )), (0.25, ( "left","down" ))),
+    ((0.5,( "left","up" )), (0.5, ( "left","down" ))),
+    ((0.75, ( "left","up" )), (0.75, ( "left","down" ))),
+    ((0.25, ( "right","up" )), (0.25, ( "right","down" ))),
+    ((0.5,( "right","up" )), (0.5, ( "right","down" ))),
+    ((0.75, ( "right","up" )), (0.75, ( "right","down" ))),
+
+    ((0.25, ( "left","up" )), (0.25, ( "right","down" ))),
+    ((0.5,( "left","up" )), (0.5, ( "right","down" ))),
+    ((0.75, ( "left","up" )), (0.75, ( "right","down" ))),
+    ((0.25, ( "right","up" )), (0.25, ( "left","down" ))),
+    ((0.5,( "right","up" )), (0.5, ( "left","down" ))),
+    ((0.75, ( "right","up" )), (0.75, ( "left","down" ))),
+]
+annotator = Annotator(g.ax, pairs, data=learningCurveInteraction[learningCurveInteraction.firstSeg == "Down"],x='proba', y="aSPv", hue="interaction",hue_order=hue_order, order=order)
+annotator.configure(test='t-test_paired', text_format='star', loc='outside',comparisons_correction="BH",fontsize=15)
+annotator.apply_and_annotate()
 
 # Determine the number of bars per x-value
 n_categories = len(df_prime["interaction"].unique())
@@ -1128,7 +1418,7 @@ g.ax.legend(
 )
 
 # Customize the plot
-g.ax.set_title("Down Trials:\n Previous TD and its firstSeg", fontsize=30)
+# g.ax.set_title("Down Trials:\n Previous TD and its firstSeg", fontsize=30)
 g.ax.set_ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 g.ax.set_xlabel(r"$\mathbb{P}$(Left|Down)", fontsize=30)
 g.ax.tick_params(labelsize=25)
@@ -1137,12 +1427,14 @@ plt.tight_layout()
 plt.savefig(pathFig + "/aSPvDownInteractionFullProba.png",dpi=300, transparent=True)
 plt.show()
 # %%
+learningCurveInteraction
+# %%
 dd = df.groupby(["sub", "proba", "firstSeg", "TD_prev"])["aSPv"].mean().reset_index()
 # %%
 model = smf.mixedlm(
     "aSPv~  C(firstSeg)*C(TD_prev)",
     data=df[df.proba == 0.25],
-    re_formula="~TD_prev",
+    re_formula="~TD_prev*firstSeg",
     groups=df[df.proba == 0.25]["sub"],
 ).fit(method="lbfgs")
 model.summary()
@@ -1150,21 +1442,39 @@ model.summary()
 model = smf.mixedlm(
     "aSPv~  C(firstSeg)*C(TD_prev)",
     data=df[df.proba == 0.75],
-    re_formula="~TD_prev",
+    re_formula="~TD_prev*firstSeg",
     groups=df[df.proba == 0.75]["sub"],
 ).fit(method="lbfgs")
 model.summary()
 # %%
 model = smf.mixedlm(
-    "aSPv~  C(firstSeg)*C(TD_prev)",
+    "aSPv~ firstSeg*TD_prev",
     data=df[df.proba == 0.5],
-    re_formula="~TD_prev",
+     re_formula="~TD_prev",
     groups=df[df.proba == 0.5]["sub"],
-).fit(method="lbfgs")
+).fit()
+model.summary()
+# %%
+df.columns
+# %%
+# Models with the interaction term of the previous TD and previous cue.
+model = smf.mixedlm(
+    "aSPv~TD_prev*firstSeg_prev",
+    data=df[( df.proba == 0.5  )& (df['firstSeg']=='Up')],
+     # re_formula="~TD_prev*firstSeg_prev",
+    groups=df[( df.proba == 0.5  )& (df['firstSeg']=='Up')]["sub"],
+).fit()
 model.summary()
 # %%
 
-
+model = smf.mixedlm(
+    "aSPv~ firstSeg*TD_prev*firstSeg_prev",
+    data=df[df.proba == 0.75],
+     re_formula="~TD_prev*firstSeg_prev",
+    groups=df[df.proba == 0.75]["sub"],
+).fit(method=['lbfgs'])
+model.summary()
+# %%
 # Define transition counts for previous state = down
 down_transitions = (
     df[df["firstSeg_prev"] == "down"]

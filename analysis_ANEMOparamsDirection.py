@@ -109,7 +109,7 @@ dirVoluntary = (
 dirImposed = (
     "/Users/mango/oueld.h/contextuaLearning/directionCue/results_imposeDirection/"
 )
-main_dir = dirImposed
+main_dir = dirVoluntary
 
 os.chdir(main_dir)
 subject_sessions = get_subjects_and_sessions(main_dir)
@@ -155,7 +155,7 @@ for sub in subjects:
 
         dataSub = pd.concat([dataSub, data_tmp], ignore_index=True)
 
-    except Exception as e:
+    except Exception:
         print("Error! \n Couldn't process {}".format(sub))
         # traceback.print_exc()
 # %%
@@ -188,8 +188,8 @@ for k in keys2plot:  # for each variable to plot
     sns.violinplot(
         x="cond",
         y=k[0],
-        # hue="chosen_arrow",
-        hue="arrow",
+        hue="chosen_arrow",
+        # hue="arrow",
         data=data2plot,
         saturation=1,
         # bw=0.3,
@@ -216,8 +216,8 @@ for k in keys2plot:  # for each variable to plot
         sns.violinplot(
             x="cond",
             y=k[0],
-            hue="arrow",  # for imposed condition
-            # hue="chosen_arrow",
+            # hue="arrow",  # for imposed condition
+            hue="chosen_arrow",
             data=data2plot[data2plot["sub"] == sub],
             saturation=1,
             # bw=0.3,
