@@ -25,7 +25,7 @@ from joblib import Parallel, delayed
 print("Current working directory:", os.getcwd())
 print("Contents of current directory:", os.listdir())
 
-motionDirectionCue = "/Users/mango/oueld.h/contextuaLearning/motionDirectionCue"
+motionDirectionCue = "/envau/work/brainets/oueld.h/contextuaLearning/motionDirectionCue"
 main_dir = motionDirectionCue
 os.chdir(main_dir)
 
