@@ -267,15 +267,15 @@ def process_subject_condition(sub, cond):
                     sample_rate=1000,
                 )
 
-                misac = A.detec_misac(
-                    velocity_x=velocity_deg_x,
-                    velocity_y=velocity_deg_y,
-                    t_0=arg.t_0,
-                    VFAC=5,
-                    mindur=sacc_params[1]["mindur"],
-                    maxdur=sacc_params[1]["maxdur"],
-                    minsep=sacc_params[1]["minsep"],
-                )
+                # misac = A.detec_misac(
+                #     velocity_x=velocity_deg_x,
+                #     velocity_y=velocity_deg_y,
+                #     t_0=arg.t_0,
+                #     VFAC=5,
+                #     mindur=sacc_params[1]["mindur"],
+                #     maxdur=sacc_params[1]["maxdur"],
+                #     minsep=sacc_params[1]["minsep"],
+                # )
 
                 new_saccades = arg.saccades
                 # Commenting the miccorsaccades.
@@ -376,7 +376,7 @@ def process_subject_condition(sub, cond):
                 newTargetOnset = np.where(time == 0)[0][0]
 
                 if (
-                    np.mean(np.isnan(vel_x[newTargetOnset - 50 : newTargetOnset + 50])) > 0.3
+                    np.mean(np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])) > 0.5
                     or np.mean(np.isnan(vel_x)) > 0.7
                     or longestNanRun(vel_x[newTargetOnset - 100: newTargetOnset + 100]) > 100
                 ):
@@ -407,9 +407,9 @@ def process_subject_condition(sub, cond):
                     print("Time", newTargetOnset)
                     reason = ""
                     
-                    if np.mean(np.isnan(vel_x[newTargetOnset - 50 : newTargetOnset + 50])) > 0.3:
+                    if np.mean(np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])) > 0.5:
                         print("too many NaNs around the start of the pursuit")
-                        reason = reason + " >.30 of NaNs around the start of the pursuit"
+                        reason = reason + " >.50 of NaNs around the start of the pursuit"
                         nanOnsetpdf.savefig(fig)
                     elif np.mean(np.isnan(vel_x)) > 0.7:
                         print("too many NaNs overall")
@@ -452,7 +452,7 @@ def process_subject_condition(sub, cond):
                         param_fit, inde_var = Fit.generation_param_fit(
                             equation="fct_velocity_sigmo",
                             dir_target=current_param_exp["dir_target"][trial],
-                            trackertime=arg.trackertime,
+                            trackertime=time,
                             TargetOn=time[newTargetOnset],
                             StimulusOf=time[0],
                             saccades=new_saccades,

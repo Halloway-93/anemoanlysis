@@ -38,7 +38,6 @@ with h5py.File(file, "r") as f:
 df = pd.read_hdf(file, "rawFormatted")
 df.columns
 # %%
-# %%
 df[df.new_cond.isin([4,5,6])][["new_cond",'condition']].value_counts()
 # %%
 df[( df.new_cond.isin([5]) )][ ["target_dir"] ].value_counts()

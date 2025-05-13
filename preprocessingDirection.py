@@ -76,7 +76,7 @@ dirVoluntary = (
 dirImposed = (
     "/Users/mango/oueld.h/contextuaLearning/directionCue/results_imposeDirection/"
 )
-main_dir = dirVoluntary
+main_dir = dirImposed
 
 subject_sessions = get_subjects_and_sessions(main_dir)
 
@@ -469,10 +469,10 @@ for idxSub, sub in enumerate(subjects):
                         np.mean(
                             np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])
                         )
-                        > 0.4
+                        > 0.5
                         or np.mean(np.isnan(vel_x)) > 0.7
                         or longestNanRun(
-                            vel_x[newTargetOnset - 200 : newTargetOnset + 100]
+                            vel_x[newTargetOnset - 100 : newTargetOnset + 100]
                         )
                         >100
                         # or abs(
@@ -521,11 +521,11 @@ for idxSub, sub in enumerate(subjects):
                                     vel_x[newTargetOnset - 100 : newTargetOnset + 100]
                                 )
                             )
-                            > 0.3
+                            > 0.5
                         ):
                             print("too many NaNs around the start of the pursuit")
                             reason = (
-                                reason + " >.40 of NaNs around the start of the pursuit"
+                                reason + " >.50 of NaNs around the start of the pursuit"
                             )
                             nanOnsetpdf.savefig(fig)
                         elif np.mean(np.isnan(vel_x)) > 0.7:
@@ -534,7 +534,7 @@ for idxSub, sub in enumerate(subjects):
                             nanOverallpdf.savefig(fig)
                         elif (
                             longestNanRun(
-                                vel_x[newTargetOnset - 200 : newTargetOnset +100]
+                                vel_x[newTargetOnset - 100 : newTargetOnset +100]
                             )
                             > 100
                         ):
@@ -614,7 +614,7 @@ for idxSub, sub in enumerate(subjects):
                                 vel_x,
                                 equation="fct_velocity_sigmo",
                                 dir_target=int(param_exp["dir_target"][trial]),
-                                trackertime=list(inde_var["x"]),
+                                trackertime=time_x,
                                 TargetOn=0,
                                 StimulusOf=time_x[0],
                                 saccades=new_saccades,

@@ -27,7 +27,7 @@ print("Contents of current directory:", os.listdir())
 activeColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/data"
 passvieColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/imposedColorData"
 attentionColor = "/Users/mango/oueld.h/attentionalTask/data"
-main_dir = activeColor
+main_dir = attentionColor
 os.chdir(main_dir)
 
 import warnings
@@ -431,12 +431,12 @@ for idxSub, sub in enumerate(subjects):
 
                     if (
                         np.mean(
-                            np.isnan(vel_x[newTargetOnset - 200 : newTargetOnset + 100])
+                            np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])
                         )
-                        > 0.3
+                        > 0.5
                         or np.mean(np.isnan(vel_x[:-time_sup])) > 0.7
                         or longestNanRun(
-                            vel_x[newTargetOnset - 200 : newTargetOnset + 100]
+                            vel_x[newTargetOnset - 100 : newTargetOnset + 100]
                         )
                         > 100
                         # or abs(
@@ -482,14 +482,14 @@ for idxSub, sub in enumerate(subjects):
                         if (
                             np.mean(
                                 np.isnan(
-                                    vel_x[newTargetOnset - 200 : newTargetOnset + 100]
+                                    vel_x[newTargetOnset - 100 : newTargetOnset + 100]
                                 )
                             )
-                            > 0.3
+                            > 0.5
                         ):
                             print("too many NaNs around the start of the pursuit")
                             reason = (
-                                reason + " >.30 of NaNs around the start of the pursuit"
+                                reason + " >.50 of NaNs around the start of the pursuit"
                             )
                             nanOnsetpdf.savefig(fig)
                         elif np.mean(np.isnan(vel_x[:-time_sup])) > 0.7:
@@ -498,7 +498,7 @@ for idxSub, sub in enumerate(subjects):
                             nanOverallpdf.savefig(fig)
                         elif (
                             longestNanRun(
-                                vel_x[newTargetOnset - 200 : newTargetOnset + 100]
+                                vel_x[newTargetOnset - 100 : newTargetOnset + 100]
                             )
                             > 100
                         ):
@@ -576,9 +576,9 @@ for idxSub, sub in enumerate(subjects):
                                 vel_x,
                                 equation="fct_velocity_sigmo",
                                 dir_target=int(param_exp["dir_target"][trial]),
-                                trackertime=list(inde_var["x"]),
+                                trackertime=time_x,
                                 TargetOn=0,
-                                StimulusOf=-200,
+                                StimulusOf=time_x[0],
                                 saccades=new_saccades,
                                 time_sup=None,
                                 step_fit=2,

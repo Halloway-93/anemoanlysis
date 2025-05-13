@@ -394,9 +394,9 @@ for idxSub, sub in enumerate(subjects):
 
                     if (
                         np.mean(
-                            np.isnan(vel_x[newTargetOnset - 50 : newTargetOnset + 50])
+                            np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])
                         )
-                        > 0.3
+                        > 0.5
                         or np.mean(np.isnan(vel_x)) > 0.7
                         or longestNanRun(
                             vel_x[newTargetOnset - 100: newTargetOnset +100]

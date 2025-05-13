@@ -339,12 +339,12 @@ fig = plt.figure()
 figManager = plt.get_current_fig_manager()
 figManager.full_screen_toggle()
 sns.pointplot(
-    data=dd,
+    data=df,
     x="proba",
     y="aSPv",
     capsize=0.1,
     n_boot=10000,
-    errorbar="se",
+    errorbar="ci",
     hue="firstSeg",
     hue_order=["Down", "Up"],
 )
