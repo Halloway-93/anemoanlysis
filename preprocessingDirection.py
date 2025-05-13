@@ -52,9 +52,9 @@ def get_unified_sacc_params(subjects):
     base_params = {
         "mindur": 5,
         "maxdur": 100,
-        "minsep": 20,
-        "before_sacc": 20,
-        "after_sacc": 20,
+        "minsep": 30,
+        "before_sacc": 25,
+        "after_sacc": 25,
     }
 
     return {
@@ -345,15 +345,15 @@ for idxSub, sub in enumerate(subjects):
                         sample_rate=1000,
                     )
 
-                    misac = A.detec_misac(
-                        velocity_x=velocity_deg_x,
-                        velocity_y=velocity_deg_y,
-                        t_0=arg.t_0,
-                        VFAC=5,
-                        mindur=sacc_params[1]["mindur"],
-                        maxdur=sacc_params[1]["maxdur"],
-                        minsep=sacc_params[1]["minsep"],
-                    )
+                    # misac = A.detec_misac(
+                    #     velocity_x=velocity_deg_x,
+                    #     velocity_y=velocity_deg_y,
+                    #     t_0=arg.t_0,
+                    #     VFAC=5,
+                    #     mindur=sacc_params[1]["mindur"],
+                    #     maxdur=sacc_params[1]["maxdur"],
+                    #     minsep=sacc_params[1]["minsep"],
+                    # )
 
                     new_saccades = arg.saccades
                     [
