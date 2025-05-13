@@ -36,6 +36,8 @@ plt.show()
 sns.histplot(data=df, x="SPlat")
 plt.show()
 # %%
+df[df.SPlat==df['SPlat'].values.max()]
+# %%
 sns.histplot(data=df, x="aSPoff")
 plt.show()
 # %%
@@ -67,11 +69,11 @@ for sub in df["sub"].unique():
                     "arrow_prev",
                 ] = prev_trial["chosen_arrow"].values[0]
 # %%
-df[df["TD_prev"].isna()]
+df=df[~( df["TD_prev"].isna() )]
 # %%
 # df = df[~((df["sub"] == 6) & (df["proba"] == 0.5))]
 # df = df[~((df["sub"] == 6) & (df["proba"] == 0.5))]
-df = df[~((df["sub"] == 2)|(df["sub"] == 4))]
+df = df[~((df["sub"] == 2)|(df["sub"] == 4)| (df["sub"] == 12))]
 # %%
 df["TD_prev"] = df["TD_prev"].apply(lambda x: "right" if x == 1 else "left")
 df["interaction"] = list(zip(df["TD_prev"], df["arrow_prev"]))
@@ -84,6 +86,8 @@ plt.show()
 # %%
 badTrials = df[( df["aSPv"] < -11 ) | ( df["aSPv"] > 11 )]["aSPv"]
 print(badTrials )
+# %%
+df = df[~(( df["aSPv"] < -8 ) | ( df["aSPv"] > 8 ))]
 # %%
 balance = df.groupby(["arrow", "sub", "proba"])["trial"].count().reset_index()
 print(balance)
@@ -161,138 +165,6 @@ for a in df["arrow"].unique():
     plt.show()
 
 # %% 
-# Create a list to store results
-slope_data = []
-
-# Loop through each unique color
-for c in df["arrow"].unique():
-    # Loop through each subject within this color
-    for s in df[df["arrow"] == c]["sub"].unique():
-        # Get data for this specific color and subject
-        subset = df[(df["arrow"] == c) & (df["sub"] == s)]
-
-        # Only calculate slope if we have enough data points
-        if len(subset) > 1:
-            # Calculate linear regression
-            slope, intercept, r_value, p_value, std_err = stats.linregress(
-                subset["proba"], subset["aSPv"]
-            )
-
-            # Store results
-            slope_data.append(
-                {
-                    "sub": s,
-                    "arrow": c,
-                    "slope": slope,
-                    "r_squared": r_value**2,
-                    "p_value": p_value,
-                }
-            )
-
-# Convert to DataFrame
-slope_df = pd.DataFrame(slope_data)
-
-# If you want to merge this with your original dataframe
-# First create a unique key for merging
-df["arrow_sub"] = df["arrow"] + "_" + df["sub"].astype(str)
-slope_df["arrow_sub"] = slope_df["arrow"] + "_" + slope_df["sub"].astype(str)
-print(slope_df)
-# %%
-slopeD = slope_df[slope_df["arrow"] == "down"]["slope"]
-slopeU = slope_df[slope_df["arrow"] == "up"]["slope"]
-
-# Spearman's rank correlation
-correlation, p_value = spearmanr(slopeD, slopeU)
-print(
-    f"Spearman's correlation(Slope Down, Slope Up): {correlation}, p-value: {p_value}"
-)
-# %%
-aSPvD = (
-    dd[(dd["arrow"] == "down") & (dd["proba"] == 0.75)]["aSPv"].values
-    - dd[(dd["arrow"] == "down") & (dd["proba"] == 0.25)]["aSPv"].values
-)
-aSPvU = (
-    dd[(dd["arrow"] == "Up") & (dd["proba"] == 0.75)]["aSPv"].values
-    - dd[(dd["arrow"] == "Up") & (dd["proba"] == 0.25)]["aSPv"].values
-)
-# %%
-
-# Spearman's rank correlation
-correlation, p_value = spearmanr(slopeD, aSPvD)
-print(f"Spearman's correlation(Slope Down, aSPvD): {correlation}, p-value: {p_value}")
-# %%
-# Extract slope values for Green and Red colors
-green_slopes = slope_df[slope_df.arrow == "down"]["slope"]
-red_slopes = slope_df[slope_df.arrow == "up"]["slope"]
-
-# Create scatter plot
-plt.figure(figsize=(8, 8))  # Square figure for equal axes
-plt.scatter(x=green_slopes, y=red_slopes, alpha=0.7)
-
-# Calculate linear regression
-slope, intercept, r_value, p_value, std_err = stats.linregress(green_slopes, red_slopes)
-
-# Find the range for both axes to center around 0
-all_values = np.concatenate([green_slopes, red_slopes])
-max_abs_val = max(abs(all_values.min()), abs(all_values.max()))
-axis_limit = max_abs_val * 1.1  # Add 10% margin
-
-# Set equal limits centered on 0
-plt.xlim(-axis_limit, axis_limit)
-plt.ylim(-axis_limit, axis_limit)
-
-# Create x values for the regression line
-x_line = np.linspace(-axis_limit, axis_limit, 100)
-
-# Calculate corresponding y values for regression line
-y_line = slope * x_line + intercept
-
-# Plot the regression line
-plt.plot(
-    x_line,
-    y_line,
-    color="red",
-    linestyle="--",
-    label=f"Regression: y = {slope:.3f}x + {intercept:.3f}",
-)
-
-# Add x=y line
-plt.plot(
-    [-axis_limit, axis_limit],
-    [axis_limit, -axis_limit],
-    "k-",
-    alpha=0.5,
-    label="x = -y",
-)
-
-# Add text with regression parameters
-plt.annotate(
-    f"y = {slope:.3f}x + {intercept:.3f}\nR² = {r_value**2:.3f}, p = {p_value:.3f}",
-    xy=(0.05, 0.95),
-    xycoords="axes fraction",
-    bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.8),
-)
-
-# Add reference lines at x=0 and y=0
-plt.axhline(y=0, color="gray", linestyle="-", alpha=0.3)
-plt.axvline(x=0, color="gray", linestyle="-", alpha=0.3)
-
-# Add labels and title
-plt.xlabel("Down Slope")
-plt.ylabel("Up Slope")
-plt.title("Relationship Between Down and Up Condition Slopes")
-plt.grid(True, alpha=0.3)
-plt.legend(loc="lower right")
-
-# Make axes equal
-plt.axis("equal")
-
-# Show plot
-plt.tight_layout()
-plt.savefig(pathFig + "/linearRegressionSlopesFullProba.png",dpi=300, transparent=True)
-plt.show()
-# %%
-
 
 # checking the normality of the data
 print(pg.normality(dd[dd.proba == 0.5]["aSPv"]))
@@ -331,7 +203,7 @@ facet_grid.figure.subplots_adjust(
 # Show the plot
 plt.show()
 
-# %%
+# s%%
 df1 = df[((df["proba"] < 1))]
 df1
 # %%
@@ -398,8 +270,6 @@ plt.savefig(pathFig + "/asemAcrossprobaviolinFullProba.png",dpi=300, transparent
 plt.show()
 
 # %%
-dd[(dd.proba == 1) & (dd.arrow == "up") & (dd.aSPv < 0)]
-# %%
 fig = plt.figure()
 # Toggle full screen mode
 figManager = plt.get_current_fig_manager()
@@ -453,6 +323,9 @@ model = smf.mixedlm(
     groups=df["sub"],
 ).fit()
 model.summary()
+# %%
+downarrowsPalette = ["#0F68A9", "#A2D9FF"]
+uparrowsPalette = ["#FAAE7B", "#FFD699"]
 # %%
 # Extract fixed effects
 fe = model.fe_params
@@ -559,7 +432,49 @@ plt.axis("equal")
 plt.tight_layout()
 plt.savefig(pathFig + "/linearRegressionSlopesFullProba.png",dpi=300, transparent=True)
 plt.show()
+# %%
+fe = model.fe_params
+intc = fe['Intercept']
+slope = fe['proba']
+color_effect = fe['arrow[T.up]']
+interaction = fe['proba:arrow[T.up]']
 
+# Random effects
+re_df = pd.DataFrame(model.random_effects).T
+re_df.columns = ['Intercept_re', 'proba_re', 'arrow[T.Up]_re', 'proba:arrow[T.Up]_re']
+re_df['sub'] = re_df.index
+# %%
+# Proba range
+proba_range = np.linspace(df['proba'].min(), df['proba'].max(), 50)
+# Plot
+fig, ax = plt.subplots(figsize=(10, 6))
+
+for _, row in re_df.iterrows():
+    # Subject-level random intercept and slope
+    i_re = row['Intercept_re']
+    s_re = row['proba_re']
+
+    # Green (reference)
+    y_green = (intc + i_re) + (slope + s_re) * proba_range
+    ax.plot(proba_range, y_green, color='blue', alpha=0.3)
+
+    # Red (with fixed and random adjustments)
+    y_red = (intc + color_effect + i_re) + (slope + interaction + s_re) * proba_range
+    ax.plot(proba_range, y_red, color='orange', alpha=0.3)
+
+# Fixed effect mean lines (thick black)
+mean_green = intc + slope * proba_range
+mean_red = (intc + color_effect) + (slope + interaction) * proba_range
+ax.plot(proba_range, mean_green, color='black', linewidth=3, label='Green mean')
+ax.plot(proba_range, mean_red, color='black', linewidth=3, linestyle='--', label='Red mean')
+
+# Labels and legend
+ax.set_xlabel('proba')
+ax.set_ylabel('aSPv')
+ax.set_title('Random Slopes and Intercepts by Color')
+ax.legend()
+plt.tight_layout()
+plt.show()
 
 # %%
 model = smf.mixedlm(
@@ -625,8 +540,6 @@ model.summary()
 
 
 # %%
-downarrowsPalette = ["#0F68A9", "#A2D9FF"]
-uparrowsPalette = ["#FAAE7B", "#FFD699"]
 dd = df.groupby(["sub", "arrow", "proba"])[["aSPv"]].mean().reset_index()
 # %%
 # fig = plt.figure()
@@ -685,8 +598,9 @@ def statistic(x, y,axis):
 
     return np.mean(x,axis=axis) - np.mean(y,axis=axis)
 # %%
-x=dd[( dd['arrow']=='down' )& (dd['proba']==0.75)]['aSPv'].values
-y=dd[( dd['arrow']=='down' )& ( dd['proba']==0.5 )]['aSPv'].values
+ddd=dd[~( dd['sub']==6 )]
+x=ddd[( ddd['arrow']=='up' )& (ddd['proba']==0.75)]['aSPv'].values
+y=ddd[( ddd['arrow']=='up' )& ( ddd['proba']==0.5 )]['aSPv'].values
 statistic(x,y,0)
 # %%
 res = permutation_test(data=(x, y), statistic=statistic,permutation_type='samples', vectorized=True,n_resamples=2**(len(x)),)
@@ -904,17 +818,11 @@ sns.stripplot(
 order=[0,0.25,0.5,0.75,1]
 hue_order=["left", "right"]
 pairs = [
-    # ((0., "left"), (0., "right")),
+    ((0., "left"), (0., "right")),
     ((0.25, "left"), (0.25, "right")),
     ((0.5, "left"), (0.5, "right")),
     ((0.75, "left"), (0.75, "right")),
     # ((1, "left"), (1, "right")),
-    # ((0.25, "Down"), (0.5, "Down")),
-    # ((0.75, "Down"), (0.5, "Down")),
-    # ((0.25, "Up"), (0.5, "Up")),
-    # ((0.75, "Up"), (0.5, "Up"))
-
-
 ]
 annotator = Annotator(g.ax, pairs, data=dd[dd.arrow == "down"], x='proba', y="aSPv", hue="TD_prev",hue_order=hue_order, order=order)
 annotator.configure(test='t-test_paired', text_format='star', loc='outside',comparisons_correction="HB",fontsize=20)
@@ -1819,12 +1727,57 @@ plt.savefig(pathFig + "/individualsDOWN.png",dpi=300, transparent=True)
 plt.show()
 # %%
 model = smf.mixedlm(
-    "aSPv~C( arrow,Treatment('up') )*C(proba,Treatment(0.5))",
+    "aSPv~proba*arrow",
     data=df,
-    re_formula="~proba",
+    re_formula="~proba*arrow",
     groups=df["sub"],
 ).fit()
 model.summary()
+# %%
+fe = model.fe_params
+intc = fe['Intercept']
+slope = fe['proba']
+color_effect = fe['arrow[T.up]']
+interaction = fe['proba:arrow[T.up]']
+
+# Random effects
+re_df = pd.DataFrame(model.random_effects).T
+re_df.columns = ['Intercept_re', 'proba_re', 'arrow[T.Up]_re', 'proba:arrow[T.Up]_re']
+re_df['sub'] = re_df.index
+# %%
+# Proba range
+proba_range = np.linspace(df['proba'].min(), df['proba'].max(), 50)
+# Plot
+fig, ax = plt.subplots(figsize=(10, 6))
+
+for _, row in re_df.iterrows():
+    # Subject-level random intercept and slope
+    i_re = row['Intercept_re']
+    s_re = row['proba_re']
+
+    # Green (reference)
+    y_green = (intc + i_re) + (slope + s_re) * proba_range
+    ax.plot(proba_range, y_green, color='blue', alpha=0.3)
+
+    # Red (with fixed and random adjustments)
+    y_red = (intc + color_effect + i_re) + (slope + interaction + s_re) * proba_range
+    ax.plot(proba_range, y_red, color='orange', alpha=0.3)
+
+# Fixed effect mean lines (thick black)
+mean_green = intc + slope * proba_range
+mean_red = (intc + color_effect) + (slope + interaction) * proba_range
+ax.plot(proba_range, mean_green, color='black', linewidth=3, label='Down mean')
+ax.plot(proba_range, mean_red, color='black', linewidth=3, linestyle='--', label='Up mean')
+
+# Labels and legend
+ax.set_xlabel('proba')
+ax.set_ylabel('aSPv')
+ax.set_title('Random Slopes and Intercepts by Color')
+ax.legend()
+plt.tight_layout()
+plt.show()
+
+
 # %%
 model = smf.mixedlm(
     "aSPv~C( arrow )",
@@ -1838,7 +1791,7 @@ model.summary()
 model = smf.mixedlm(
     "aSPv~C( arrow )",
     data=df[df.proba == 0.25],
-    # re_formula="~arrow",
+    re_formula="~arrow",
     groups=df[df.proba == 0.25]["sub"],
 ).fit()
 model.summary()
@@ -1925,6 +1878,8 @@ plt.yticks(fontsize=25)
 plt.tight_layout()
 plt.savefig(pathFig + "/aSPvarrows.png",dpi=300, transparent=True)
 plt.show()
+# %%
+dd[dd['proba']==0.5]
 # %%
 df_prime = df[
     [

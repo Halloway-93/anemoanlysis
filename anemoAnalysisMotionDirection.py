@@ -74,7 +74,7 @@ df[df['sub']=='sub-011'][ ['cond','proba'] ]
 df[df["TD_prev"].isna()]
 # %%
 df = df[~(df["TD_prev"].isna())]
-df = df[(df['sub']!='sub-011')]
+# df = df[(df['sub']!='sub-011')]
 # %%
 df["TD_prev"] = df["TD_prev"].apply(lambda x: "right" if x == 1 else "left")
 df["interaction"] = list(zip(df["TD_prev"], df["firstSeg_prev"]))
@@ -1192,6 +1192,62 @@ plt.savefig(pathFig + "/aSPvinterDiffUp.png",dpi=300, transparent=True)
 plt.show()
 # %%
 
+# %%
+g=sns.catplot(
+    data=df_long[df_long['firstSeg']=='Down'],
+    x="proba",
+    y="aSPv",
+    hue="Diff",
+    kind="bar",
+    errorbar=("ci", 95),
+    # errorbar='se',
+    n_boot=1000,
+    height=10,  # Set the height of the figure
+    aspect=1.5,
+    capsize=0.1,
+    hue_order=["Down", "Up"],
+    fill=False,
+    legend=False,
+    palette=[downfirstSegsPalette[0], upfirstSegsPalette[0]],
+)
+sns.stripplot(
+    data=df_long[df_long['firstSeg']=='Down'],
+    x="proba",
+    y="aSPv",
+    hue="Diff",
+    hue_order=["Down", "Up"],
+    dodge=True,
+    palette=[downfirstSegsPalette[0], upfirstSegsPalette[0]],
+    jitter=True,
+    size=6,
+    linewidth=1,
+)
+order=[0.25,0.5,0.75]
+hue_order=["Down", "Up"]
+pairs = [
+    ((0.25, "Down"), (0.25, "Up")),
+    ((0.5, "Down"), (0.5, "Up")),
+    ((0.75, "Down"), (0.75, "Up")),
+
+]
+annotator = Annotator(g.ax, pairs,data=df_long[df_long['firstSeg']=='Down'], x='proba', y="aSPv", hue="Diff",hue_order=hue_order, order=order)
+annotator.configure(test='t-test_paired',  loc='outside',fontsize=20)
+annotator.apply_and_annotate()
+# plt.title("Horizontal aSPv Across 5 Probabilities", fontsize=30)
+plt.xlabel(r"$\mathbb{P}$(Right|Up)=$\mathbb{P}$(Left|Down)", fontsize=25)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=25)
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+legend_elements = [
+    Patch(facecolor=downfirstSegsPalette[0], alpha=1, label="Down"),
+    Patch(facecolor=upfirstSegsPalette[0], alpha=1, label="Up"),
+]
+g.ax.legend(
+    handles=legend_elements, fontsize=20, title="Diff", title_fontsize=20
+)
+plt.tight_layout()
+plt.savefig(pathFig + "/aSPvinterDiffDown.png",dpi=300, transparent=True)
+plt.show()
 # %%
 learningCurveInteraction[
     learningCurveInteraction["aSPv"] == learningCurveInteraction["aSPv"].max()

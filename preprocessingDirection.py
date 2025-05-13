@@ -52,7 +52,7 @@ def get_unified_sacc_params(subjects):
     base_params = {
         "mindur": 5,
         "maxdur": 100,
-        "minsep": 30,
+        "minsep": 20,
         "before_sacc": 20,
         "after_sacc": 20,
     }
@@ -76,7 +76,7 @@ dirVoluntary = (
 dirImposed = (
     "/Users/mango/oueld.h/contextuaLearning/directionCue/results_imposeDirection/"
 )
-main_dir = dirImposed
+main_dir = dirVoluntary
 
 subject_sessions = get_subjects_and_sessions(main_dir)
 
@@ -312,7 +312,7 @@ for idxSub, sub in enumerate(subjects):
                         saccades=arg.saccades,
                         before_sacc=sacc_params[1]["before_sacc"],
                         after_sacc=sacc_params[1]["after_sacc"],
-                        filt=None,
+                        filt=False,
                         cutoff=30,
                         sample_rate=1000,
                     )
@@ -324,7 +324,7 @@ for idxSub, sub in enumerate(subjects):
                         saccades=arg.saccades,
                         before_sacc=sacc_params[1]["before_sacc"],
                         after_sacc=sacc_params[1]["after_sacc"],
-                        filt=None,
+                        filt=False,
                         cutoff=30,
                         sample_rate=1000,
                     )
@@ -467,20 +467,20 @@ for idxSub, sub in enumerate(subjects):
 
                     if (
                         np.mean(
-                            np.isnan(vel_x[newTargetOnset - 200 : newTargetOnset + 100])
+                            np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])
                         )
-                        > 0.3
-                        or np.mean(np.isnan(vel_x[:-time_sup])) > 0.7
+                        > 0.4
+                        or np.mean(np.isnan(vel_x)) > 0.7
                         or longestNanRun(
                             vel_x[newTargetOnset - 200 : newTargetOnset + 100]
                         )
                         >100
                         # or abs(
                         #     np.nanmean(
-                        #         vel_x[newTargetOnset + 300 : newTargetOnset + 600]
+                        #         vel_x[newTargetOnset + 250 : newTargetOnset + 500]
                         #     )
                         # )
-                        # < 4
+                        # < 3
                         # or abs(np.nanmean(vel_x[TargetOnIndex : TargetOnIndex + 100])) > 8
                     ):
 
@@ -518,17 +518,17 @@ for idxSub, sub in enumerate(subjects):
                         if (
                             np.mean(
                                 np.isnan(
-                                    vel_x[newTargetOnset - 200 : newTargetOnset + 100]
+                                    vel_x[newTargetOnset - 100 : newTargetOnset + 100]
                                 )
                             )
                             > 0.3
                         ):
                             print("too many NaNs around the start of the pursuit")
                             reason = (
-                                reason + " >.70 of NaNs around the start of the pursuit"
+                                reason + " >.40 of NaNs around the start of the pursuit"
                             )
                             nanOnsetpdf.savefig(fig)
-                        elif np.mean(np.isnan(vel_x[:-time_sup])) > 0.7:
+                        elif np.mean(np.isnan(vel_x)) > 0.7:
                             print("too many NaNs overall")
                             reason = reason + " >{0} of NaNs overall".format(0.6)
                             nanOverallpdf.savefig(fig)
@@ -538,23 +538,23 @@ for idxSub, sub in enumerate(subjects):
                             )
                             > 100
                         ):
-                            print("at least one nan sequence with more than 50ms")
+                            print("at least one nan sequence with more than 100ms")
                             reason = (
                                 reason
-                                + " At least one nan sequence with more than 50ms"
+                                + " At least one nan sequence with more than 100ms"
                             )
                             nanSequencepdf.savefig(fig)
-                        elif (
-                            abs(
-                                np.nanmean(
-                                    vel_x[newTargetOnset + 300 : newTargetOnset + 600]
-                                )
-                            )
-                            < 2
-                        ):
-                            print("No smooth pursuit")
-                            reason = reason + " No smooth pursuit"
-                            nanSequencepdf.savefig(fig)
+                        # elif (
+                        #     abs(
+                        #         np.nanmean(
+                        #             vel_x[newTargetOnset + 250 : newTargetOnset + 500]
+                        #         )
+                        #     )
+                        #     < 3
+                        # ):
+                        #     print("No smooth pursuit")
+                        #     reason = reason + " No smooth pursuit"
+                        #     nanSequencepdf.savefig(fig)
                         # if abs(np.nanmean(vel_x[TargetOnIndex : TargetOnIndex + 100])) > 8:
                         #     print("Noisy around target onset")
                         #     reason = reason + " Noisy around target onset"
@@ -616,7 +616,7 @@ for idxSub, sub in enumerate(subjects):
                                 dir_target=int(param_exp["dir_target"][trial]),
                                 trackertime=list(inde_var["x"]),
                                 TargetOn=0,
-                                StimulusOf=-200,
+                                StimulusOf=time_x[0],
                                 saccades=new_saccades,
                                 time_sup=None,
                                 step_fit=2,

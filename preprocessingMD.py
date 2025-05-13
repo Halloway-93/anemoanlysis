@@ -18,7 +18,8 @@ from functions.utils import *
 from ANEMO.ANEMO import ANEMO, read_edf
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-
+import warnings
+import traceback
 print("Current working directory:", os.getcwd())
 print("Contents of current directory:", os.listdir())
 
@@ -26,10 +27,8 @@ motionDirectionCue = "/Users/mango/oueld.h/contextuaLearning/motionDirectionCue"
 main_dir = motionDirectionCue
 os.chdir(main_dir)
 
-import warnings
 
 warnings.filterwarnings("ignore")
-import traceback
 
 
 # %% ANEMO parameters
@@ -84,7 +83,6 @@ subjects = [
     "sub-011",
 ]
 
-conditions = ["c1", "c2", "c3"]  # This is for the balanced cues.
 
 conds_by_sub=dict(
     {   
@@ -112,8 +110,8 @@ def get_unified_sacc_params(subjects):
         "mindur": 5,
         "maxdur": 100,
         "minsep": 30,
-        "before_sacc": 20,
-        "after_sacc": 20,
+        "before_sacc": 25,
+        "after_sacc": 25,
     }
 
     return {
@@ -292,10 +290,11 @@ for idxSub, sub in enumerate(subjects):
                     )
 
                     new_saccades = arg.saccades
-                    [
-                        sacc.extend([0, 0, 0, 0, 0]) for sacc in misac
-                    ]  # transform misac into the eyelink format
-                    new_saccades.extend(misac)
+                    # Commenting the miccorsaccades.
+                    # [
+                    #     sacc.extend([0, 0, 0, 0, 0]) for sacc in misac
+                    # ]  # transform misac into the eyelink format
+                    # new_saccades.extend(misac)
                     # new_saccades = [x[:2] for x in new_saccades]
 
                     sac = A.detec_sac(
@@ -347,14 +346,14 @@ for idxSub, sub in enumerate(subjects):
                     # It should print 0 for all the trials if everything is good.
                     print("time:", time[TargetOnIndex])
                     # indices to keep
-                    idx2keep = np.logical_and(time >= -600, time <= 600)
+                    idx2keep = np.logical_and(time >= -200, time <= 600)
                     time = time[idx2keep]
                     pos_y = arg.data_y[idx2keep]
                     vel_y = velocity_y_NAN[idx2keep]
 
-                    idx2keep_x = np.logical_and(time >= -600, time <= 600)
                     pos_x = arg.data_x[idx2keep]
                     vel_x = velocity_x_NAN[idx2keep]
+
                     pos_deg_x = pos_deg_x[idx2keep]
                     pos_deg_y = pos_deg_y[idx2keep]
                     # calc saccades relative to t_0
@@ -398,9 +397,9 @@ for idxSub, sub in enumerate(subjects):
                             np.isnan(vel_x[newTargetOnset - 50 : newTargetOnset + 50])
                         )
                         > 0.3
-                        or np.mean(np.isnan(vel_x[:-time_sup])) > 0.7
+                        or np.mean(np.isnan(vel_x)) > 0.7
                         or longestNanRun(
-                            vel_x[newTargetOnset - 200 : newTargetOnset +100]
+                            vel_x[newTargetOnset - 100: newTargetOnset +100]
                         )
                         > 100
                         # or abs(
@@ -456,13 +455,13 @@ for idxSub, sub in enumerate(subjects):
                                 reason + " >.30 of NaNs around the start of the pursuit"
                             )
                             nanOnsetpdf.savefig(fig)
-                        if np.mean(np.isnan(vel_x[:-time_sup])) > 0.7:
+                        elif np.mean(np.isnan(vel_x)) > 0.7:
                             print("too many NaNs overall")
                             reason = reason + " >{0} of NaNs overall".format(0.6)
                             nanOverallpdf.savefig(fig)
-                        if (
+                        elif (
                             longestNanRun(
-                                vel_x[newTargetOnset - 200 : newTargetOnset + 100]
+                                vel_x[newTargetOnset - 100 : newTargetOnset + 100]
                             )
                             > 100
                         ):
@@ -472,17 +471,17 @@ for idxSub, sub in enumerate(subjects):
                                 + " At least one nan sequence with more than 200ms"
                             )
                             nanSequencepdf.savefig(fig)
-                        if (
-                            abs(
-                                np.nanmean(
-                                    vel_x[newTargetOnset + 300 : newTargetOnset + 600]
-                                )
-                            )
-                            < 4
-                        ):
-                            print("No smooth pursuit")
-                            reason = reason + " No smooth pursuit"
-                            nanSequencepdf.savefig(fig)
+                        # if (
+                        #     abs(
+                        #         np.nanmean(
+                        #             vel_x[newTargetOnset + 300 : newTargetOnset + 600]
+                        #         )
+                        #     )
+                        #     < 4
+                        # ):
+                        #     print("No smooth pursuit")
+                        #     reason = reason + " No smooth pursuit"
+                        #     nanSequencepdf.savefig(fig)
                         # if abs(np.nanmean(vel_x[TargetOnIndex : TargetOnIndex + 100])) > 8:
                         #     print("Noisy around target onset")
                         #     reason = reason + " Noisy around target onset"
@@ -528,7 +527,7 @@ for idxSub, sub in enumerate(subjects):
                                 equation="fct_velocity_sigmo",
                                 dir_target=param_exp["dir_target"][trial],
                                 trackertime=time,
-                                TargetOn=0,
+                                TargetOn=time[newTargetOnset],
                                 StimulusOf=time[0],
                                 saccades=new_saccades,
                                 value_latency=classic_lat_x - 200,
@@ -540,7 +539,7 @@ for idxSub, sub in enumerate(subjects):
                                 vel_x,
                                 equation="fct_velocity_sigmo",
                                 dir_target=int(param_exp["dir_target"][trial]),
-                                trackertime=list(inde_var["x"]),
+                                trackertime=time,
                                 TargetOn=0,
                                 StimulusOf=time[0],
                                 saccades=new_saccades,
@@ -556,7 +555,7 @@ for idxSub, sub in enumerate(subjects):
                             )
 
                             eq_x_tmp = ANEMO.Equation.fct_velocity_sigmo(
-                                x=inde_var["x"],
+                                x=time,
                                 t_0=result_x.params["t_0"],
                                 t_end=result_x.params["t_end"],
                                 dir_target=result_x.params["dir_target"],

@@ -1,6 +1,5 @@
 import pandas as pd
 import h5py
-
 import matplotlib.pyplot as plt
 
 # %%
@@ -21,7 +20,7 @@ plt.plot(df.time[0], df.velocity_x[0])
 plt.plot(df.time[0], df.velocity_y[0])
 plt.show()
 # %%
-file = "/Volumes/hpc_home/oueld.h/MD/s10_CP_rawData.h5"
+file = "/Volumes/hpc_home/oueld.h/MD/s11_CP_rawData.h5"
 # Open the HDF5 file
 with h5py.File(file, "r") as f:
     # Get keys at the root level
@@ -39,7 +38,10 @@ with h5py.File(file, "r") as f:
 df = pd.read_hdf(file, "rawFormatted")
 df.columns
 # %%
-df[df.new_cond.isin([4,5,6])][ ["new_cond",'condition'] ].value_counts()
+# %%
+df[df.new_cond.isin([4,5,6])][["new_cond",'condition']].value_counts()
+# %%
+df[( df.new_cond.isin([5]) )][ ["target_dir"] ].value_counts()
 # %%
 df
 # %%
@@ -50,7 +52,7 @@ dd = (
 )
 dd
 # %%
-dd[dd["condition"] == 1]["target_dir"].value_counts()
+dd[dd["condition"] == 4]["target_dir"].value_counts()
 # %%
 conds=[i for i in range(1,7)]
 # %%
@@ -67,35 +69,6 @@ for s in subs:
 
         mat = pd.read_csv(filPath, sep="\t")
         print( mat[mat.firstSegmentMotion==1]["firstSegmentMotion"].value_counts())
+
+        print( mat[mat.firstSegmentMotion==1]["secondSegmentMotion"].value_counts())
             
-# %%
-cond = filPath.split(
-    ".mat",
-)[
-    0
-][-2:]
-# %%
-mat
-# %%
-(mat["trialType"])[:, 1]
-# %%
-with h5py.File(filPath, "r") as f:
-    data = f.read()
-
-# %%
-import numpy as np
-
-with h5py.File(filPath, "r") as f:
-    # H5py loads MATLAB variables differently
-    # We need to get and transpose the dataset
-
-    firstSeg = np.array(f.get("listFirstSeg"))[0]
-    secondSeg = np.array(f.get("listSecondSeg"))[0]
-
-    # Convert to numpy array and transpose (MATLAB stores arrays column-wise)
-    data = np.array([firstSeg, secondSeg]).T
-    df = pd.DataFrame(
-        data,
-        columns=["firstSegmentMotion", "secondSegmentMotion"],
-    )
-    print(df)

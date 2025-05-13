@@ -27,7 +27,7 @@ print("Contents of current directory:", os.listdir())
 activeColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/data"
 passvieColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/imposedColorData"
 attentionColor = "/Users/mango/oueld.h/attentionalTask/data"
-main_dir = passvieColor
+main_dir = activeColor
 os.chdir(main_dir)
 
 import warnings
