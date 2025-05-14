@@ -795,11 +795,11 @@ fig = plt.figure()
 figManager = plt.get_current_fig_manager()
 figManager.full_screen_toggle()
 sns.pointplot(
-    data=df,
+    data=dd,
     x="proba",
     y="aSPv",
     capsize=0.1,
-    errorbar="ci",
+    errorbar="se",
     n_boot=10000,
     hue="color",
     hue_order=colors,
@@ -850,40 +850,6 @@ plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
 plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 plt.savefig(pathFig + "/individualsRed.png",dpi=300, transparent=True)
-plt.show()
-# %%
-sns.lmplot(
-    data=dd[dd.color == "Red"],
-    x="proba",
-    y="aSPv",
-    hue="sub",
-    palette="tab20",
-    height=10,
-)
-# _ = plt.title("Horizontal aSPv Per Subject: color Red", fontsize=30)
-# plt.legend(fontsize=20)
-plt.xlabel(r"$\mathbb{P}$(Right|Red)", fontsize=30)
-plt.xticks(fontsize=25)
-plt.yticks(fontsize=25)
-plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsRedlm.png",dpi=300, transparent=True)
-plt.show()
-# %%
-sns.lmplot(
-    data=dd[dd.color == "Green"],
-    x="proba",
-    y="aSPv",
-    hue="sub",
-    palette="tab20",
-    height=10,
-)
-# _ = plt.title("Horizontal aSPv Per Subject: color Red", fontsize=30)
-# plt.legend(fontsize=20)
-plt.xlabel(r"$\mathbb{P}$(Left|Green)", fontsize=30)
-plt.xticks(fontsize=25)
-plt.yticks(fontsize=25)
-plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsGreenlm.png",dpi=300, transparent=True)
 plt.show()
 # %%
 fig = plt.figure()
@@ -964,34 +930,11 @@ plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
 plt.show()
 # %%
-fig = plt.figure()
-# Toggle full screen mode
-figManager = plt.get_current_fig_manager()
-figManager.full_screen_toggle()
-sns.pointplot(
-    data=df[df.color == "Green"],
-    x="proba",
-    y="aSPv",
-    capsize=0.1,
-    errorbar="ci",
-    hue="sub",
-    palette="tab20",
-    alpha=0.8,
-)
-# _ = plt.title("Horizontal aSPv Per Subject: color Green", fontsize=30)
-plt.legend(fontsize=20)
-plt.xlabel(r"$\mathbb{P}$(Left|Green)", fontsize=30)
-plt.xticks(fontsize=25)
-plt.yticks(fontsize=25)
-plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsGreen.png",dpi=300, transparent=True)
-plt.show()
-# %%
 pg.normality(dd['aSPv'])
 # %%
 anova_results = pg.rm_anova(
     dv="aSPv",
-    within=["color", "proba"],
+    within=["proba", "color"],
     subject="sub",
     data=dd,
 )
@@ -1001,7 +944,7 @@ print(anova_results)
 model = smf.mixedlm(
     "aSPv~C(proba,Treatment(0.5))*C(color,Treatment('Red'))",
     data=df,
-    re_formula="~proba",
+    re_formula="~proba*color",
     groups=df["sub"],
 ).fit()
 model.summary()
@@ -1263,7 +1206,7 @@ pairs = [
 
 ]
 annotator = Annotator(g.ax, pairs, data=dd, x='proba', y="aSPv", hue=hue,hue_order=hue_order, order=order)
-annotator.configure(test='t-test_paired', text_format='star', loc='outside',comparisons_correction="HB")
+annotator.configure(test='t-test_paired', text_format='star', loc='outside')
 annotator.apply_and_annotate()
 legend_elements = [
     Patch(facecolor=GreencolorsPalette[1], alpha=1, label="Green"),
@@ -1348,7 +1291,6 @@ g.ax.legend(
 plt.tight_layout()
 plt.savefig(pathFig + "/aSPvfirstSegsFullProbabis.png",dpi=300, transparent=True)
 plt.show()
-# %%
 # %%
 
 figManager = plt.get_current_fig_manager()
@@ -1441,7 +1383,7 @@ plt.savefig(pathFig + "/aSPvGreen.png",dpi=300, transparent=True)
 plt.show()
 # %%
 dd = df.groupby(["sub", "color", "proba", "TD_prev"])[["aSPv"]].mean().reset_index()
-# s%%
+# %%
 # Create the plot using catplot
 g = sns.catplot(
     data=df[df.color == "Green"],
@@ -1582,7 +1524,7 @@ pairs = [
 
 ]
 annotator = Annotator(g.ax, pairs,    data=dd[dd.color == "Green"], x='proba', y="aSPv", hue=hue,hue_order=hue_order, order=order)
-annotator.configure(test='t-test_paired', text_format='star', loc='outside',comparisons_correction="HB")
+annotator.configure(test='t-test_paired', text_format='star', loc='outside',fontsize=20)
 annotator.apply_and_annotate()
 
 
