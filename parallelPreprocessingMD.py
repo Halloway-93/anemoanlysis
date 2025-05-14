@@ -453,7 +453,7 @@ def process_subject_condition(sub, cond):
                             equation="fct_velocity_sigmo",
                             dir_target=current_param_exp["dir_target"][trial],
                             trackertime=time,
-                            TargetOn=time[newTargetOnset],
+                            TargetOn=0,
                             StimulusOf=time[0],
                             saccades=new_saccades,
                             value_latency=classic_lat_x - 200,
@@ -650,7 +650,7 @@ if __name__ == "__main__":
     print(f"Starting parallel processing of {len(subject_condition_pairs)} subject-condition pairs")
     # You can adjust n_jobs based on your system's CPU cores
     # Use n_jobs=-1 to use all available cores
-    results = Parallel(n_jobs=4, verbose=10)(
+    results = Parallel(n_jobs=-1, verbose=10)(
         delayed(process_subject_condition)(sub, cond) 
         for sub, cond in subject_condition_pairs
     )
