@@ -267,21 +267,21 @@ def process_subject_condition(sub, cond):
                     sample_rate=1000,
                 )
 
-                # misac = A.detec_misac(
-                #     velocity_x=velocity_deg_x,
-                #     velocity_y=velocity_deg_y,
-                #     t_0=arg.t_0,
-                #     VFAC=5,
-                #     mindur=sacc_params[1]["mindur"],
-                #     maxdur=sacc_params[1]["maxdur"],
-                #     minsep=sacc_params[1]["minsep"],
-                # )
+                misac = A.detec_misac(
+                    velocity_x=velocity_deg_x,
+                    velocity_y=velocity_deg_y,
+                    t_0=arg.t_0,
+                    VFAC=5,
+                    mindur=sacc_params[1]["mindur"],
+                    maxdur=sacc_params[1]["maxdur"],
+                    minsep=sacc_params[1]["minsep"],
+                )
 
                 new_saccades = arg.saccades
                 # Commenting the miccorsaccades.
-                # [sacc.extend([0, 0, 0, 0, 0]) for sacc in misac]  # transform misac into the eyelink format
-                # new_saccades.extend(misac)
-                # new_saccades = [x[:2] for x in new_saccades]
+                [sacc.extend([0, 0, 0, 0, 0]) for sacc in misac]  # transform misac into the eyelink format
+                new_saccades.extend(misac)
+                new_saccades = [x[:2] for x in new_saccades]
 
                 sac = A.detec_sac(
                     velocity_x=velocity_deg_x,
