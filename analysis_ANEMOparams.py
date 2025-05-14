@@ -18,15 +18,10 @@ This script analyses the extracted anemo params
 # %% bibs
 # run always
 import os
-import sys
-import h5py
-import time as timer
 import numpy as np
 import pandas as pd
 from functions.utils import *
-from ANEMO.ANEMO import ANEMO, read_edf
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
 
 activeColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/data"
@@ -163,7 +158,7 @@ for sub in subjects:
 
         dataSub = pd.concat([dataSub, data_tmp], ignore_index=True)
         print(dataSub)
-    except Exception as e:
+    except Exception:
         print("Error! \n Couldn't process {}".format(sub))
         # traceback.print_exc()
 # %%
