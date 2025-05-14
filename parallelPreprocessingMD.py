@@ -281,7 +281,7 @@ def process_subject_condition(sub, cond):
                 # Commenting the miccorsaccades.
                 [sacc.extend([0, 0, 0, 0, 0]) for sacc in misac]  # transform misac into the eyelink format
                 new_saccades.extend(misac)
-                new_saccades = [x[:2] for x in new_saccades]
+                # new_saccades = [x[:2] for x in new_saccades]
 
                 sac = A.detec_sac(
                     velocity_x=velocity_deg_x,
