@@ -27,7 +27,7 @@ import seaborn as sns
 activeColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/data"
 passiveColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/imposedColorData"
 attentionColor = "/Users/mango/oueld.h/attentionalTask/data"
-main_dir = attentionColor
+main_dir = passiveColor
 os.chdir(main_dir)
 
 # %matplotlib auto
