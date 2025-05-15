@@ -36,7 +36,7 @@ plt.show()
 sns.histplot(data=df, x="SPlat")
 plt.show()
 # %%
-df[df.SPlat==df['SPlat'].values.max()]
+df[df.SPlat==df['SPlat'].values.max()]['SPlat']
 # %%
 sns.histplot(data=df, x="aSPoff")
 plt.show()
@@ -69,8 +69,10 @@ for sub in df["sub"].unique():
                     "arrow_prev",
                 ] = prev_trial["chosen_arrow"].values[0]
 # %%
+
 df=df[~( df["TD_prev"].isna() )]
 # %%
+
 # df = df[~((df["sub"] == 6) & (df["proba"] == 0.5))]
 # df = df[~((df["sub"] == 6) & (df["proba"] == 0.5))]
 df = df[~((df["sub"] == 2)|(df["sub"] == 4)| (df["sub"] == 12))]
@@ -822,10 +824,10 @@ pairs = [
     ((0.25, "left"), (0.25, "right")),
     ((0.5, "left"), (0.5, "right")),
     ((0.75, "left"), (0.75, "right")),
-    # ((1, "left"), (1, "right")),
+    ((1, "left"), (1, "right")),
 ]
 annotator = Annotator(g.ax, pairs, data=dd[dd.arrow == "down"], x='proba', y="aSPv", hue="TD_prev",hue_order=hue_order, order=order)
-annotator.configure(test='t-test_paired', text_format='star', loc='outside',comparisons_correction="HB",fontsize=20)
+annotator.configure(test='t-test_paired', text_format='star', loc='outside',fontsize=20)
 annotator.apply_and_annotate()
 
 # Create custom legend
@@ -1149,7 +1151,7 @@ dd = df.groupby(["sub", "proba", "arrow", "TD_prev"])["aSPv"].mean().reset_index
 model = smf.mixedlm(
     "aSPv~  C(arrow)*C(TD_prev)",
     data=df[df.proba == 0.25],
-    re_formula="~TD_prev",
+    re_formula="~arrow*TD_prev",
     groups=df[df.proba == 0.25]["sub"],
 ).fit(method="lbfgs")
 model.summary()
@@ -1157,7 +1159,7 @@ model.summary()
 model = smf.mixedlm(
     "aSPv~  C(arrow)*C(TD_prev)",
     data=df[df.proba == 0.75],
-    re_formula="~TD_prev",
+    re_formula="~arrow*TD_prev",
     groups=df[df.proba == 0.75]["sub"],
 ).fit(method="lbfgs")
 model.summary()
@@ -1165,7 +1167,7 @@ model.summary()
 model = smf.mixedlm(
     "aSPv~  C(arrow)*C(TD_prev)",
     data=df[df.proba == 0.5],
-    re_formula="~TD_prev",
+    re_formula="~arrow*TD_prev",
     groups=df[df.proba == 0.5]["sub"],
 ).fit(method="lbfgs")
 model.summary()
@@ -1731,7 +1733,7 @@ model = smf.mixedlm(
     data=df,
     re_formula="~proba*arrow",
     groups=df["sub"],
-).fit()
+).fit(method=['lbfgs'])
 model.summary()
 # %%
 fe = model.fe_params

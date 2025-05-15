@@ -20,11 +20,13 @@ pathFig = "/Users/mango/Contextual-Learning/ColorCue/figures/voluntaryColor/"
 df = pd.read_csv("/Users/mango/anemoanlysis/LMM/dataANEMO_allSubs_activeColorCP.csv")
 RedcolorsPalette = ["#e83865", "#cc3131"]
 GreencolorsPalette = ["#008000", "#285943"]
+
 # %%
 
 df.rename(columns={"pR-Red": "proba"}, inplace=True)
 df.rename(columns={"trial_color": "color"}, inplace=True)
 print(df["sub"].unique())
+
 # %%
 df["sub"] = [int(x.split("-")[1]) for x in df["sub"]]
 df["sub"].unique()
@@ -561,7 +563,7 @@ plt.show()
 # %%
 # Early trials
 earlyTrials = 40
-p = 0.75
+p = 0.25
 sns.displot(
     data=df[(df.proba == p) & (df.trial <= earlyTrials)],
     x="aSPv",
@@ -1044,20 +1046,20 @@ print(participant_slopes_df)
 # Add the regression plot her
 # %%
 
-residuals = model.resid
-
-# Q-Q plot
-stats.probplot(residuals, dist="norm", plot=plt)
-plt.title("Q-Q plot of residuals")
-plt.show()
-# %%
-pg.qqplot(residuals, dist="norm")
-plt.show()
-# %%
-# Histogram
-plt.hist(residuals, bins=50)
-plt.title("Histogram of residuals")
-plt.show()
+# residuals = model.resid
+#
+# # Q-Q plot
+# stats.probplot(residuals, dist="norm", plot=plt)
+# plt.title("Q-Q plot of residuals")
+# plt.show()
+# # %%
+# pg.qqplot(residuals, dist="norm")
+# plt.show()
+# # %%
+# # Histogram
+# plt.hist(residuals, bins=50)
+# plt.title("Histogram of residuals")
+# plt.show()
 # %%
 model = smf.mixedlm(
     "aSPv~proba",
@@ -1259,7 +1261,7 @@ sns.stripplot(
     # legend=False,
 )
 hue_order=[0.25,0.5,0.75]
-order=["Green", "Red"]
+order=["Red", "Green"]
 pairs = [
     (("Green",0.25), ('Green',0.50)),
     (("Green",0.75), ('Green',0.50)),
@@ -1439,7 +1441,7 @@ pairs = [
 
 ]
 annotator = Annotator(g.ax, pairs,    data=dd[dd.color == "Green"], x='proba', y="aSPv", hue=hue,hue_order=hue_order, order=order)
-annotator.configure(test='t-test_paired', text_format='star', loc='outside',comparisons_correction="HB")
+annotator.configure(test='t-test_paired', text_format='star', loc='outside',fontsize=20)
 annotator.apply_and_annotate()
 
 # Create custom legend
@@ -1549,6 +1551,9 @@ plt.tight_layout()
 plt.savefig(pathFig + "/aSPvRedTD.png",dpi=300, transparent=True)
 plt.show()
 
+# %%
+# %%
+df[(df['sub']==1)&(df['proba']==0.25)&(df['trial']==2)][['aSPon','aSPoff','aSPv']]
 # %%
 dd[
     (dd["color"] == "Red")
@@ -2268,10 +2273,10 @@ plt.axhline(y=0, color='black', linestyle='-', alpha=0.3)
 plt.axvline(x=0, color='black', linestyle='-', alpha=0.3)
 
 # Center the plot on (0,0)
-x_min = -2
-x_max = 2
-y_min = -2
-y_max = 2
+x_min = -4
+x_max = 4
+y_min = -4
+y_max = 4
 # Ensure equal scale on both axes
 max_range = max(x_max - x_min, y_max - y_min) / 2
 plt.xlim(-max_range, max_range)
