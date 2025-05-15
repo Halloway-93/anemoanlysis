@@ -487,18 +487,6 @@ def process_subject_condition(sub, main_dir, sacc_params, px_per_deg, showPlots=
                             print("too many NaNs overall")
                             reason = reason + " >{0} of NaNs overall".format(0.6)
                             nanOverallpdf.savefig(fig)
-                        elif (
-                            longestNanRun(
-                                vel_x[newTargetOnset - 100 : newTargetOnset +100]
-                            )
-                            > 100
-                        ):
-                            print("at least one nan sequence with more than 100ms")
-                            reason = (
-                                reason
-                                + " At least one nan sequence with more than 100ms"
-                            )
-                            nanSequencepdf.savefig(fig)
                         # elif (
                         #     abs(
                         #         np.nanmean(
@@ -809,8 +797,8 @@ if __name__ == "__main__":
     print("Contents of current directory:", os.listdir())
 
     # Define directories
-    dirVoluntary = "/Users/mango/oueld.h/contextuaLearning/directionCue/results_voluntaryDirection/"
-    dirImposed = "/Users/mango/oueld.h/contextuaLearning/directionCue/results_imposeDirection/"
+    dirVoluntary = "/envau/work/brainets/oueld.h/contextuaLearning/directionCue/results_voluntaryDirection/"
+    dirImposed = "/envau/work/brainets/oueld.h/contextuaLearning/directionCue/results_imposeDirection/"
     
     # Screen parameters
     screen_width_px = 1920  # px
