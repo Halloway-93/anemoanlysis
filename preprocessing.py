@@ -46,6 +46,8 @@ tan = np.arctan((screen_width_cm / 2) / viewingDistance)
 screen_width_deg = 2.0 * tan * 180 / np.pi
 px_per_deg = screen_width_px / screen_width_deg
 
+px_per_deg=27.46
+
 param_exp = {  # Mandatory :
     # - number of trials per block :
     "N_trials": 1,
@@ -221,7 +223,7 @@ for idxSub, sub in enumerate(subjects):
             # if showPlots:
             pdf = PdfPages(fitPDFFile)  # opens the pdf file to save the figures
 
-            data = read_edf(dataFile, start="FixOn", stop="TargetOff")
+            data = read_edf(dataFile, start="FixOff", stop="TargetOff")
 
             # tg_up = pd.read_csv(tgDirFile, sep="\t")["trial_color_UP"]
 
@@ -353,7 +355,7 @@ for idxSub, sub in enumerate(subjects):
                                 ]
                             )
                         )
-                    blinks = [x[:2] for x in blinks]
+                    # blinks = [x[:2] for x in blinks]
 
                     velocity_x_NAN = A.data_NAN(
                         data=velocity_deg_x,
@@ -375,23 +377,21 @@ for idxSub, sub in enumerate(subjects):
                     # It should print 0 for all the trials if everything is good.
                     # print("time:", time[TargetOnIndex])
 
-                    idx2keep_y = np.logical_and(time >= -200, time <= 600)
-                    time_y = time[idx2keep_y]
-                    pos_y = arg.data_y[idx2keep_y]
-                    vel_y = velocity_y_NAN[idx2keep_y]
+                    idx2keep = np.logical_and(time >= -200, time < 600)
+                    time = time[idx2keep]
+                    pos_y = arg.data_y[idx2keep]
+                    vel_y = velocity_y_NAN[idx2keep]
 
-                    idx2keep_x = np.logical_and(time >= -200, time <= 600)
-                    time_x = time[idx2keep_x]
-                    pos_x = arg.data_x[idx2keep_x]
-                    vel_x = velocity_x_NAN[idx2keep_x]
+                    pos_x = arg.data_x[idx2keep]
+                    vel_x = velocity_x_NAN[idx2keep]
 
                     # vel_x[:25] = np.nan
                     # vel_y[:25] = np.nan
                     # vel_x[-25:] = np.nan
                     # vel_y[-25:] = np.nan
 
-                    pos_deg_x = pos_deg_x[idx2keep_x]
-                    pos_deg_y = pos_deg_y[idx2keep_y]
+                    pos_deg_x = pos_deg_x[idx2keep]
+                    pos_deg_y = pos_deg_y[idx2keep]
 
                     # calc saccades relative to t_0
                     # because I am passing the time relative to t_0 to ANEMO
@@ -400,12 +400,12 @@ for idxSub, sub in enumerate(subjects):
                         sacc[1] = sacc[1] - arg.TargetOn
 
                     sDict = {
+                        
                         "condition": cond,
                         "trial": trial,
                         "trialType": trialType_txt,
                         "direction": param_exp["dir_target"][trial],
-                        "time_x": time_x,
-                        "time_y": time_y,
+                        "time": time,
                         "posPxl_x": pos_x,
                         "posPxl_y": pos_y,
                         "posDeg_x": pos_deg_x,
@@ -419,7 +419,10 @@ for idxSub, sub in enumerate(subjects):
                     if firstTrial:
                         paramsRaw = pd.DataFrame([sDict], columns=sDict.keys())
                     #                         firstTrial = False # DELETE THIS LINE WHEN RUNNING THE FIT
+
+                    
                     else:
+
                         paramsRaw = pd.concat(
                             [paramsRaw, pd.DataFrame([sDict], columns=sDict.keys())],
                             ignore_index=True,
@@ -427,14 +430,14 @@ for idxSub, sub in enumerate(subjects):
 
                     # test: if bad trial
                     # Getting the newTargetOnset index
-                    newTargetOnset = np.where(time_x == 0)[0][0]
+                    newTargetOnset = np.where(time == 0)[0][0]
 
                     if (
                         np.mean(
                             np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])
                         )
                         > 0.5
-                        or np.mean(np.isnan(vel_x[:-time_sup])) > 0.7
+                        or np.mean(np.isnan(vel_x)) > 0.7
                         or longestNanRun(
                             vel_x[newTargetOnset - 100 : newTargetOnset + 100]
                         )
@@ -446,6 +449,11 @@ for idxSub, sub in enumerate(subjects):
                         # )
                         # < 4
                         # or abs(np.nanmean(vel_x[TargetOnIndex : TargetOnIndex + 100])) > 8
+                        # or
+                        # np.mean(
+                        #     np.isnan(vel_x[newTargetOnset + 300])
+                        # )
+                        # > 0.7
                     ):
 
                         print("Skipping bad trial...")
@@ -454,22 +462,21 @@ for idxSub, sub in enumerate(subjects):
                         fig = plt.figure(figsize=(10, 4))
                         plt.suptitle("Trial %d" % trial)
                         plt.subplot(1, 2, 1)
-                        plt.plot(time_x, vel_x)
-                        plt.axvline(x=time_x[0], linewidth=1, linestyle="--", color="k")
+                        plt.plot(time, vel_x)
+                        plt.axvline(x=time[0], linewidth=1, linestyle="--", color="k")
                         plt.axvline(
-                            x=time_x[-1], linewidth=1, linestyle="--", color="k"
+                            x=time[-1], linewidth=1, linestyle="--", color="k"
                         )
-                        # plt.xlim(-100, 1200)
                         plt.ylim(-15, 15)
                         plt.xlabel("Time (ms)")
                         plt.ylabel("Velocity - x axis")
                         plt.subplot(1, 2, 2)
-                        plt.plot(time_y, vel_y)
-                        plt.axvline(x=time_y[0], linewidth=1, linestyle="--", color="k")
+                        plt.plot(time, vel_y)
+                        plt.axvline(x=time[0], linewidth=1, linestyle="--", color="k")
+                        plt.axvline(x=time[newTargetOnset], linewidth=1, linestyle="--", color="r")
                         plt.axvline(
-                            x=time_y[-1], linewidth=1, linestyle="--", color="k"
+                            x=time[-1], linewidth=1, linestyle="--", color="k"
                         )
-                        # plt.xlim(-100, 1200)
                         plt.ylim(-35, 35)
                         plt.xlabel("Time (ms)")
                         plt.ylabel("Velocity - y axis")
@@ -532,8 +539,7 @@ for idxSub, sub in enumerate(subjects):
                         newResult["trialType"] = trialType_txt
                         newResult["target_dir"] = param_exp["dir_target"][trial]
 
-                        x = arg.trackertime - arg.TargetOn
-                        newResult["time"] = x[:-time_sup]
+                        newResult["time"] = time
                         newResult["velocity_x"], newResult["velocity_y"] = (
                             velocity_x_NAN[:-time_sup],
                             velocity_y_NAN[:-time_sup],
@@ -563,22 +569,23 @@ for idxSub, sub in enumerate(subjects):
                             param_fit, inde_var = Fit.generation_param_fit(
                                 equation="fct_velocity_sigmo",
                                 dir_target=param_exp["dir_target"][trial],
-                                trackertime=time_x,
+                                trackertime=time,
                                 TargetOn=0,
-                                StimulusOf=time_x[0],
+                                StimulusOf=time[0],
                                 saccades=new_saccades,
                                 value_latency=classic_lat_x - 200,
                                 value_steady_state=classic_max_x,
                                 value_anti=classic_ant * 5,
                             )
+                            # print('inde_var:',inde_var)
 
                             result_x = Fit.Fit_trial(
                                 vel_x,
                                 equation="fct_velocity_sigmo",
                                 dir_target=int(param_exp["dir_target"][trial]),
-                                trackertime=time_x,
+                                trackertime=time,
                                 TargetOn=0,
-                                StimulusOf=time_x[0],
+                                StimulusOf=time[0],
                                 saccades=new_saccades,
                                 time_sup=None,
                                 step_fit=2,
@@ -592,7 +599,7 @@ for idxSub, sub in enumerate(subjects):
                             )
 
                             eq_x_tmp = ANEMO.Equation.fct_velocity_sigmo(
-                                x=inde_var["x"],
+                                x=time,
                                 t_0=result_x.params["t_0"],
                                 t_end=result_x.params["t_end"],
                                 dir_target=result_x.params["dir_target"],
@@ -610,7 +617,7 @@ for idxSub, sub in enumerate(subjects):
                             )
 
                             eq_x_tmp = np.array(eq_x_tmp)
-                            eq_x = np.zeros(len(time_x))
+                            eq_x = np.zeros(len(time))
                             eq_x[:] = np.nan
                             eq_x[: len(eq_x_tmp)] = eq_x_tmp
 
@@ -620,7 +627,7 @@ for idxSub, sub in enumerate(subjects):
                         newResult["trialType"] = trialType_txt
                         # newResult["trialTgUP"] = trialTgUP_txt
                         newResult["target_dir"] = param_exp["dir_target"][trial]
-                        newResult["time_x"] = time_x
+                        newResult["time_x"] = time
                         newResult["velocity_x"] = vel_x
                         newResult["saccades"] = np.array(new_saccades)
 
@@ -647,7 +654,7 @@ for idxSub, sub in enumerate(subjects):
                                 "horizontal_shift"
                             ].value
 
-                            idx_aSPoff = np.where(time_x == newResult["aSPoff"])[0][0]
+                            idx_aSPoff = np.where(time == newResult["aSPoff"])[0][0]
                             vel_at_latency = (
                                 eq_x[idx_aSPoff]
                                 + (newResult["SPss"] - eq_x[idx_aSPoff])
@@ -656,7 +663,7 @@ for idxSub, sub in enumerate(subjects):
                             )
                             vel, idx = closest(eq_x[idx_aSPoff + 1 :], vel_at_latency)
 
-                            newResult["SPlat"] = time_x[idx + idx_aSPoff + 1]
+                            newResult["SPlat"] = time[idx + idx_aSPoff + 1]
                             newResult["aSPv"] = eq_x[idx_aSPoff]
 
                             newResult["allow_baseline"] = allow_baseline

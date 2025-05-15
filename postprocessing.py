@@ -33,7 +33,7 @@ import traceback
 activeColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/data"
 passiveColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/imposedColorData"
 attentionColor = "/Users/mango/oueld.h/attentionalTask/data"
-main_dir = passiveColor
+main_dir = activeColor
 os.chdir(main_dir)
 
 
@@ -126,7 +126,7 @@ keys2save = [
     "trial",
     "trialType",
     "direction",
-    "time_x",
+    "time",
     "posDeg_x",
     "velocity_x",
 ]
@@ -135,7 +135,7 @@ float_keys = [
     "posDeg_x",
     "velocity_x",
 ]
-int_keys = ["trial", "time_x"]
+int_keys = ["trial", "time"]
 
 data = dict()
 for sub in subjects:
@@ -169,11 +169,11 @@ for sub in subjects:
                     temp.loc[index]["posPxl_x"] > screen_width_px * 0.95
                 ] = np.nan
 
-                subj = np.array(np.arange(len(row["time_x"]))).astype(object)
-                condi = np.array(np.arange(len(row["time_x"]))).astype(object)
-                trial = np.array(np.arange(len(row["time_x"])))
-                trialTp = np.array(np.arange(len(row["time_x"]))).astype(object)
-                tgdir = np.array(np.arange(len(row["time_x"]))).astype(object)
+                subj = np.array(np.arange(len(row["time"]))).astype(object)
+                condi = np.array(np.arange(len(row["time"]))).astype(object)
+                trial = np.array(np.arange(len(row["time"])))
+                trialTp = np.array(np.arange(len(row["time"]))).astype(object)
+                tgdir = np.array(np.arange(len(row["time"]))).astype(object)
                 subj[:] = sub
                 condi[:] = row["condition"]
                 trial[:] = row["trial"]
@@ -187,7 +187,7 @@ for sub in subjects:
                         trial,
                         trialTp,
                         tgdir,
-                        row["time_x"],
+                        row["time"],
                         row["posDeg_x"],
                         row["velocity_x"],
                     )
