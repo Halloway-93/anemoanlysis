@@ -332,7 +332,7 @@ def process_subject_condition(sub, main_dir, sacc_params, px_per_deg, showPlots=
                                 ]
                             )
                         )
-                    blinks = [x[:2] for x in blinks]
+                    # blinks = [x[:2] for x in blinks]
 
                     velocity_x_NAN = A.data_NAN(
                         data=velocity_deg_x,

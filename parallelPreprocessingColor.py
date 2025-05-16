@@ -120,7 +120,7 @@ def process_subject_condition(main_dir, sub, cond):
         nanSequencepdf = PdfPages(nanSequenceFile)
         pdf = PdfPages(fitPDFFile)
 
-        data = read_edf(dataFile, start="FixOff", stop="TargetOff")
+        data = read_edf(dataFile, start="FixOn", stop="TargetOff")
 
         # Read target color based on the directory
         if main_dir == ACTIVE_COLOR_DIR:
@@ -188,7 +188,7 @@ def process_subject_condition(main_dir, sub, cond):
                 velocity_deg_x = A.velocity(
                     data=pos_deg_x,
                     filter_before=True,
-                    filter_after=False,
+                    filter_after=True,
                     cutoff=30,
                     sample_rate=1000,
                 )
@@ -196,7 +196,7 @@ def process_subject_condition(main_dir, sub, cond):
                 velocity_deg_y = A.velocity(
                     data=pos_deg_y,
                     filter_before=True,
-                    filter_after=False,
+                    filter_after=True,
                     cutoff=30,
                     sample_rate=1000,
                 )
@@ -298,9 +298,11 @@ def process_subject_condition(main_dir, sub, cond):
                 newTargetOnset = np.where(time == 0)[0][0]
 
                 if (
-                    np.mean(np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])) > 0.5
+                    np.mean(np.isnan(vel_x[newTargetOnset - 200 : newTargetOnset + 100])) > (1/3)
                     or np.mean(np.isnan(vel_x)) > 0.7
                     or longestNanRun(vel_x[newTargetOnset - 100 : newTargetOnset + 100]) > 100
+                    # or np.mean(np.isnan(vel_x[newTargetOnset + 300 :])) > 0.8
+
                 ):
                     print("Skipping bad trial...")
 
@@ -328,9 +330,9 @@ def process_subject_condition(main_dir, sub, cond):
                         print("at least one nan sequence with more than 100ms")
                         reason = reason + " At least one nan sequence with more than 100ms"
                         nanSequencepdf.savefig(fig)
-                    elif np.mean(np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])) > 0.5:
+                    elif np.mean(np.isnan(vel_x[newTargetOnset - 200 : newTargetOnset + 100])) > (1/3):
                         print("too many NaNs around the start of the pursuit")
-                        reason = reason + " >.50 of NaNs around the start of the pursuit"
+                        reason = reason + " >1/3 of NaNs around the start of the pursuit"
                         nanOnsetpdf.savefig(fig)
                     elif np.mean(np.isnan(vel_x[:-time_sup])) > 0.7:
                         print("too many NaNs overall")
