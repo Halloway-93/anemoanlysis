@@ -120,7 +120,7 @@ def process_subject_condition(main_dir, sub, cond):
         nanSequencepdf = PdfPages(nanSequenceFile)
         pdf = PdfPages(fitPDFFile)
 
-        data = read_edf(dataFile, start="FixOn", stop="TargetOff")
+        data = read_edf(dataFile, start="FixOff", stop="TargetOff")
 
         # Read target color based on the directory
         if main_dir == ACTIVE_COLOR_DIR:
@@ -326,7 +326,11 @@ def process_subject_condition(main_dir, sub, cond):
                     plt.ylabel("Velocity - y axis")
 
                     reason = ""
-                    if longestNanRun(vel_x[newTargetOnset - 100 : newTargetOnset + 100]) > 100:
+                    if np.mean(np.isnan(vel_x[:-time_sup])) > 0.7:
+                        print("too many NaNs overall")
+                        reason = reason + f" >{0.6} of NaNs overall"
+                        nanOverallpdf.savefig(fig)
+                    elif longestNanRun(vel_x[newTargetOnset - 100 : newTargetOnset + 100]) > 100:
                         print("at least one nan sequence with more than 100ms")
                         reason = reason + " At least one nan sequence with more than 100ms"
                         nanSequencepdf.savefig(fig)
@@ -334,10 +338,6 @@ def process_subject_condition(main_dir, sub, cond):
                         print("too many NaNs around the start of the pursuit")
                         reason = reason + " >1/3 of NaNs around the start of the pursuit"
                         nanOnsetpdf.savefig(fig)
-                    elif np.mean(np.isnan(vel_x[:-time_sup])) > 0.7:
-                        print("too many NaNs overall")
-                        reason = reason + f" >{0.6} of NaNs overall"
-                        nanOverallpdf.savefig(fig)
 
                     plt.close(fig)
 
@@ -423,7 +423,7 @@ def process_subject_condition(main_dir, sub, cond):
                     newResult["trial"] = trial
                     newResult["trialType"] = trialType_txt
                     newResult["target_dir"] = param_exp["dir_target"][trial]
-                    newResult["time_x"] = time
+                    newResult["time"] = time
                     newResult["velocity_x"] = vel_x
                     newResult["saccades"] = np.array(new_saccades)
 
@@ -535,8 +535,10 @@ def process_subject_condition(main_dir, sub, cond):
 
         # Test if files can be read
         abc = pd.read_hdf(h5_file, "data")
+        del paramsRaw, abc, paramsSub, qualityCtrl, newResult
         
         return f"Successfully processed {sub}, condition {cond}"
+
 
     except Exception as e:
         error_msg = f"Error! \nCouldn't process {sub}, condition {cond}: {str(e)}"
