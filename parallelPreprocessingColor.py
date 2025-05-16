@@ -470,7 +470,7 @@ def process_subject_condition(main_dir, sub, cond):
                     f = plotFig(
                         trial,
                         newResult["target_dir"],
-                        newResult["time_x"],
+                        newResult["time"],
                         newResult["velocity_x"],
                         eq_x,
                         newResult["aSPon"],
