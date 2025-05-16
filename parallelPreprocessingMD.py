@@ -330,7 +330,7 @@ def process_subject_condition(sub, cond):
                 # It should print 0 for all the trials if everything is good.
                 print("time:", time[TargetOnIndex])
                 # indices to keep
-                idx2keep = np.logical_and(time >= -200, time <= 600)
+                idx2keep = np.logical_and(time >= -200, time < 600)
                 time = time[idx2keep]
                 pos_y = arg.data_y[idx2keep]
                 vel_y = velocity_y_NAN[idx2keep]
@@ -376,7 +376,7 @@ def process_subject_condition(sub, cond):
                 newTargetOnset = np.where(time == 0)[0][0]
 
                 if (
-                    np.mean(np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])) > 0.5
+                    np.mean(np.isnan(vel_x[newTargetOnset - 200 : newTargetOnset + 100])) > (1/3)
                     or np.mean(np.isnan(vel_x)) > 0.7
                     or longestNanRun(vel_x[newTargetOnset - 100: newTargetOnset + 100]) > 100
                 ):
@@ -407,18 +407,18 @@ def process_subject_condition(sub, cond):
                     print("Time", newTargetOnset)
                     reason = ""
                     
-                    if longestNanRun(vel_x[newTargetOnset - 100 : newTargetOnset + 100]) > 100:
-                        print("at least one nan sequence with more than 200ms")
-                        reason = reason + " At least one nan sequence with more than 200ms"
-                        nanSequencepdf.savefig(fig)
-                    elif np.mean(np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])) > 0.5:
-                        print("too many NaNs around the start of the pursuit")
-                        reason = reason + " >.50 of NaNs around the start of the pursuit"
-                        nanOnsetpdf.savefig(fig)
-                    elif np.mean(np.isnan(vel_x)) > 0.7:
+                    if np.mean(np.isnan(vel_x)) > 0.7:
                         print("too many NaNs overall")
                         reason = reason + " >{0} of NaNs overall".format(0.6)
                         nanOverallpdf.savefig(fig)
+                    elif longestNanRun(vel_x[newTargetOnset - 100 : newTargetOnset + 100]) > 100:
+                        print("at least one nan sequence with more than 200ms")
+                        reason = reason + " At least one nan sequence with more than 200ms"
+                        nanSequencepdf.savefig(fig)
+                    elif np.mean(np.isnan(vel_x[newTargetOnset - 200 : newTargetOnset + 100])) > (1/3):
+                        print("too many NaNs around the start of the pursuit")
+                        reason = reason + " >1/3 of NaNs around the start of the pursuit"
+                        nanOnsetpdf.savefig(fig)
 
                     plt.close(fig)
 
@@ -630,6 +630,8 @@ def process_subject_condition(sub, cond):
         abc = pd.read_hdf(h5_file, "data")
         print(f"Successfully processed and saved data for {sub}, condition {cond}")
         
+        del abc, paramsRaw,paramsSub,qualityCtrl
+
         return f"Completed {sub}, {cond}"
 
     except Exception as e:

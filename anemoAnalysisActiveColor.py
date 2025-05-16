@@ -1552,7 +1552,6 @@ plt.savefig(pathFig + "/aSPvRedTD.png",dpi=300, transparent=True)
 plt.show()
 
 # %%
-# %%
 df[(df['sub']==1)&(df['proba']==0.25)&(df['trial']==2)][['aSPon','aSPoff','aSPv']]
 # %%
 dd[
