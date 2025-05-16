@@ -13,6 +13,29 @@ from joblib import Parallel, delayed
 
 warnings.filterwarnings("ignore")
 
+# Define global constants
+ACTIVE_DIR = "/Users/mango/oueld.h/contextuaLearning/directionCue/results_voluntaryDirection/"
+PASSIVE_DIR = "/Users/mango/oueld.h/contextuaLearning/directionCue/results_imposeDirection/"
+
+# Global parameters
+screen_width_px = 1920  # px
+screen_height_px = 1080  # px
+screen_width_cm = 70  # cm
+viewingDistance = 57.0  # cm
+
+tan = np.arctan((screen_width_cm / 2) / viewingDistance)
+screen_width_deg = 2.0 * tan * 180 / np.pi
+px_per_deg = screen_width_px / screen_width_deg
+# the actual value coming from eylink setup
+px_per_deg = 27.4620
+
+# Common ANEMO fitting parameters
+equation = "sigmoid"
+allow_baseline, allow_horizontalShift, allow_acceleration = True, True, False
+time_sup = 10  # time window to cut at the end of the trial
+showPlots = 0  # int(input("Do you want to see and save the plots for every trial? \npress (1) for yes or (0) for no\n "))
+manualCheck = 0
+
 
 def get_subjects_and_sessions(base_path):
     """
@@ -65,189 +88,176 @@ def get_unified_sacc_params(subjects):
     }
 
 
-def process_subject_condition(sub, main_dir, sacc_params, px_per_deg, showPlots=0, manualCheck=0, equation="sigmoid"):
-    """
-    Process a single subject in a specific condition directory
-    
-    Args:
-        sub (str): Subject identifier (e.g., "sub-001")
-        main_dir (str): Base directory path for the condition
-        sacc_params (dict): Saccade parameters
-        px_per_deg (float): Pixels per degree
-        showPlots (int): Whether to show plots
-        manualCheck (int): Whether to manually check trials
-        equation (str): Equation type for fitting
-        
-    Returns:
-        dict: Results summary for this subject-condition pair
-    """
-    print(f"Processing Subject: {sub} in directory: {main_dir}")
-    subNumber = sub.split("-")[1]  # Extract subject number
-    
-    # Get experiment parameters based on directory
-    screen_width_px = 1920  # px
-    screen_height_px = 1080  # px
-    
-    if "imposed" in main_dir.lower():
-        param_exp = {  # For imposed direction
+def get_experiment_params(main_dir):
+    """Get experiment parameters based on directory type"""
+    if main_dir == PASSIVE_DIR:
+        return {
+            # - number of trials per block :
             "N_trials": 1,
+            # - number of blocks :
             "N_blocks": 1,
+            # - direction of the target :
+            # list of lists for each block containing the direction of
+            # the target for each trial is to -1 for left 1 for right
             "dir_target": [[], []],  # will be defined in the main loop
+            # - number of px per degree for the experiment :
             "px_per_deg": px_per_deg,
             "screen_width": screen_width_px,
             "screen_height": screen_height_px,
+            # OPTIONAL :
+            # - list of the names of the events of the trial :
             "list_events": ["StimOn\n", "StimOff\n", "TargetOnSet\n", "TargetOffSet\n"],
         }
     else:
-        param_exp = {  # For voluntary direction
+        return {
+            # - number of trials per block :
             "N_trials": 1,
+            # - number of blocks :
             "N_blocks": 1,
+            # - direction of the target :
+            # list of lists for each block containing the direction of
+            # the target for each trial is to -1 for left 1 for right
             "dir_target": [[], []],  # will be defined in the main loop
+            # - number of px per degree for the experiment :
             "px_per_deg": px_per_deg,
             "screen_width": screen_width_px,
             "screen_height": screen_height_px,
+            # OPTIONAL :
+            # - list of the names of the events of the trial :
             "list_events": ["FixOn\n", "FixOff\n", "TargetOnSet\n", "TargetOffSet\n"],
         }
 
-    # Allow baseline, horizontal shift for fitting
-    allow_baseline, allow_horizontalShift, allow_acceleration = True, True, False
-    time_sup = 10  # time window to cut at the end of the trial
-    
-    # Get sessions for this subject
-    subject_sessions = get_subjects_and_sessions(main_dir)
-    subjects_list = [f"sub-{str(num).zfill(3)}" for num in subject_sessions.keys()]
-    sessions_by_subject = {
-        f"sub-{str(sub_num).zfill(3)}": [f"session-{str(sess).zfill(2)}" for sess in sessions]
-        for sub_num, sessions in subject_sessions.items()
-    }
-    
-    if sub not in sessions_by_subject:
-        return {"subject": sub, "condition": os.path.basename(main_dir), "status": "Subject not found in directory"}
-    
-    sessions = sessions_by_subject[sub]
-    trials_processed = 0
-    trials_failed = 0
 
-    for session in sessions:
-        print(f"Processing Session: {session}")
-        sessionNumber = session.split("-")[1]  # Extract session number
+def prepare_directories(main_dir, sub, session):
+    """Create output directories for plots and results"""
+    outputFolder_plots = os.path.join(main_dir, sub, "plots")
+    try:
+        os.makedirs(outputFolder_plots, exist_ok=True)
+        os.makedirs(os.path.join(outputFolder_plots, "qc"), exist_ok=True)  # QC folder
+    except OSError as e:
+        print(f"Error creating directories for {sub}, session {session}: {e}")
+        return None
 
-        # Construct the path to the session directory
+    return outputFolder_plots
+
+
+def get_file_paths(main_dir, sub, session, session_dir):
+    """Get all required file paths for processing"""
+    # Find the .asc file
+    asc_files = [
+        f for f in os.listdir(session_dir)
+        if f.endswith(".asc") and f.startswith(f"{sub}_ses")
+    ]
+    if not asc_files:
+        print(f"No .asc file found for {sub}, session {session}")
+        return None, None, None, None, None, None, None, None, None
+
+    # Find the .csv file
+    csv_files = [
+        f for f in os.listdir(session_dir)
+        if f.endswith(".csv") and f.startswith(f"{sub}_ses")
+    ]
+    if not csv_files:
+        print(f"No .csv file found for {sub}, session {session}")
+        return None, None, None, None, None, None, None, None, None
+
+    # Set up all file paths
+    asc_file = os.path.join(session_dir, asc_files[0])
+    tsv_file = os.path.join(session_dir, csv_files[0])
+    
+    # Output paths
+    outputFolder_plots = os.path.join(main_dir, sub, "plots")
+    fitPDFFile = os.path.join(outputFolder_plots, f"{sub}_{session}_fit.pdf")
+    nanOverallFile = os.path.join(outputFolder_plots, "qc", f"{sub}_{session}_nanOverall.pdf")
+    nanOnsetFile = os.path.join(outputFolder_plots, "qc", f"{sub}_{session}_nanOnset.pdf")
+    nanSequenceFile = os.path.join(outputFolder_plots, "qc", f"{sub}_{session}_nanSequence.pdf")
+    h5_file = os.path.join(session_dir, "posFilter.h5")
+    h5_rawfile = os.path.join(session_dir, "rawData.h5")
+    h5_qcfile = os.path.join(session_dir, "qualityControl.h5")
+
+    return (asc_file, tsv_file, fitPDFFile, nanOverallFile, nanOnsetFile, 
+            nanSequenceFile, h5_file, h5_rawfile, h5_qcfile)
+
+
+def process_subject_session(main_dir, sub, session):
+    """Process a single subject and session"""
+    print(f"Processing {sub}, session {session} in {main_dir}")
+    try:
+        # Setup paths
         session_dir = os.path.join(main_dir, sub, session)
-        print(session_dir)
+        outputFolder_plots = prepare_directories(main_dir, sub, session)
         
-        # Find the .asc file in the session directory
-        asc_files = [
-            f
-            for f in os.listdir(session_dir)
-            if f.endswith(".asc") and f.startswith(f"{sub}_ses")
-        ]
-
-        if not asc_files:
-            print(f"No .asc file found for {sub}, session {session}")
-            continue
-
-        # Assuming there's only one .asc file per session, take the first one
-        asc_file = os.path.join(session_dir, asc_files[0])
-        print(asc_file)
-
-        csv_files = [
-            f
-            for f in os.listdir(session_dir)
-            if f.endswith(".csv") and f.startswith(f"{sub}_ses")
-        ]
-        # Construct the path to the .tsv file
-        if not csv_files:
-            print(f"No .csv file found for {sub}, session {session}")
-            continue
-
-        tsv_file = os.path.join(session_dir, csv_files[0])
-        # Check if the .tsv file exists
-        if not os.path.exists(tsv_file):
-            print(f"File not found: {tsv_file}")
-            continue
-
-        outputFolder_plots = os.path.join(main_dir, sub, "plots")  # Relative path
-        fitPDFFile = os.path.join(outputFolder_plots, f"{sub}_{session}_fit.pdf")
-
-        try:
-            os.makedirs(outputFolder_plots, exist_ok=True)
-            os.makedirs(
-                os.path.join(outputFolder_plots, "qc"), exist_ok=True
-            )  # QC folder
-        except OSError as e:
-            print(f"Error creating directories: {e}")
-            continue
-
-        nanOverallFile = os.path.join(
-            outputFolder_plots, "qc", f"{sub}_{session}_nanOverall.pdf"
-        )
-        nanOnsetFile = os.path.join(
-            outputFolder_plots, "qc", f"{sub}_{session}_nanOnset.pdf"
-        )
-        nanSequenceFile = os.path.join(
-            outputFolder_plots, "qc", f"{sub}_{session}_nanSequence.pdf"
-        )
-
+        if not outputFolder_plots:
+            return f"Failed to create directories for {sub}, session {session}"
+        
+        # Get file paths
+        (asc_file, tsv_file, fitPDFFile, nanOverallFile, nanOnsetFile, 
+         nanSequenceFile, h5_file, h5_rawfile, h5_qcfile) = get_file_paths(main_dir, sub, session, session_dir)
+        
+        if not asc_file:
+            return f"Missing files for {sub}, session {session}"
+        
+        # Initialize PDF files
         nanOverallpdf = PdfPages(nanOverallFile)
         nanOnsetpdf = PdfPages(nanOnsetFile)
         nanSequencepdf = PdfPages(nanSequenceFile)
-
-        pdf = PdfPages(fitPDFFile)  # opens the pdf file to save the figures
-
-        try:
-            # Read the .asc file
-            h5_file = os.path.join(session_dir, "posFilter.h5")
-            h5_rawfile = os.path.join(session_dir, "rawData.h5")
-            h5_qcfile = os.path.join(session_dir, "qualityControl.h5")
-
-            paramsSub = []
-            paramsRaw = []
-            qualityCtrl = []
+        pdf = PdfPages(fitPDFFile)
+        
+        # Get experiment parameters
+        param_exp = get_experiment_params(main_dir)
+        
+        # Get subjects list for saccade params
+        subjects = [sub]  # Just need the current subject
+        sacc_params = get_unified_sacc_params(subjects)
+        
+        # Read data
+        if main_dir == PASSIVE_DIR:
+            data = read_edf(asc_file, start="StimOn", stop="blank_screen")
+        else:
+            data = read_edf(asc_file, start="FixOn", stop="blank_screen")
+        
+        # Read the .tsv file
+        tg_dir = pd.read_csv(tsv_file)["target_direction"].values
+        
+        if main_dir == PASSIVE_DIR:
+            arrow = pd.read_csv(tsv_file)["arrow"].values
+        else:
+            arrow = pd.read_csv(tsv_file)["chosen_arrow"].values
             
-            # Read eye tracking data based on condition
-            if "imposed" in main_dir.lower():
-                data = read_edf(asc_file, start="StimOn", stop="blank_screen")
-            else:
-                data = read_edf(asc_file, start="FixOn", stop="blank_screen")
-
-            # Read the target direction from csv
-            tg_dir = pd.read_csv(tsv_file)["target_direction"].values
+        # Getting the probability from the csv file
+        proba = pd.read_csv(tsv_file)["proba"].values[0]
+        
+        # Change directions from 0/1 diagonals to -1/1
+        param_exp["dir_target"] = [x if x == 1 else -1 for x in tg_dir]
+        param_exp["N_trials"] = len(data)
+        
+        # Create an ANEMO instance
+        A = ANEMO(param_exp)
+        Fit = A.Fit(param_exp)
+        
+        # Process each trial
+        firstTrial = True
+        paramsSub = []
+        paramsRaw = []
+        qualityCtrl = []
+        
+        for trial in range(param_exp["N_trials"]):
+            print(f"Trial {trial}, session {session}, sub {sub}")
             
-            # Read arrow type based on condition
-            if "imposed" in main_dir.lower():
-                arrow = pd.read_csv(tsv_file)["arrow"].values
-            else:
-                arrow = pd.read_csv(tsv_file)["chosen_arrow"].values
-            
-            # Getting the probability from the csv file
-            proba = pd.read_csv(tsv_file)["proba"].values[0]
-
-            # Change directions from 0/1 diagonals to -1/1
-            param_exp["dir_target"] = [x if x == 1 else -1 for x in tg_dir]
-            param_exp["N_trials"] = len(data)
-
-            # Create an ANEMO instance
-            A = ANEMO(param_exp)
-            Fit = A.Fit(param_exp)
-
-            firstTrial = True
-
             for trial in list(range(param_exp["N_trials"])):
-                print(f"Trial {trial}, session {session}, sub {sub}")
+                print("Trial {0}, session {1}, sub {2}".format(trial, session, sub))
                 if len(data[trial]["x"]) and len(data[trial]["y"]):
                     data[trial]["y"] = screen_height_px - data[trial]["y"]
 
                     type_dir = "R" if param_exp["dir_target"][trial] == 1 else "L"
                     type_arrow = arrow[trial]
                     trialType_txt = "{a}{d}".format(a=type_arrow, d=type_dir)
-                    
                     # Get trial data and transform into the arg
                     arg = A.arg(data_trial=data[trial], trial=trial, block=0)
-                    
-                    # Process trial data...
+                    # print(arg)
+
                     TargetOnIndex = arg.TargetOn - arg.t_0
-                    
+
                     pos_deg_x = A.data_deg(
                         data=arg.data_x,
                         StimulusOf=arg.StimulusOf,
@@ -459,18 +469,6 @@ def process_subject_condition(sub, main_dir, sacc_params, px_per_deg, showPlots=
                         reason = ""
                         # print(vel_x[TargetOnIndex - 100 : TargetOnIndex + 100])
                         if (
-                            longestNanRun(
-                                vel_x[newTargetOnset - 100 : newTargetOnset +100]
-                            )
-                            > 100
-                        ):
-                            print("at least one nan sequence with more than 100ms")
-                            reason = (
-                                reason
-                                + " At least one nan sequence with more than 100ms"
-                            )
-                            nanSequencepdf.savefig(fig)
-                        elif (
                             np.mean(
                                 np.isnan(
                                     vel_x[newTargetOnset - 100 : newTargetOnset + 100]
@@ -726,116 +724,78 @@ def process_subject_condition(sub, main_dir, sacc_params, px_per_deg, showPlots=
                             [qualityCtrl, pd.DataFrame([qCtrl], columns=qCtrl.keys())],
                             ignore_index=True,
                         )
-                    # Continue with processing logic from the original code
-                    # (Logic for eye position, velocity calculation, saccade detection, etc.)
-                    
-                    # Track statistics
-                    trials_processed += 1
-                    
-                # End of trial processing
-
-            # Save data to HDF5 files
-            nanOnsetpdf.close()
-            nanOverallpdf.close()
-            nanSequencepdf.close()
-
-            pdf.close()
-            plt.close("all")
-
-            # Save paramsSub, paramsRaw, qualityCtrl to HDF5 files
-            if len(paramsSub) > 0:
-                paramsSub.to_hdf(h5_file, "data")
-                paramsRaw.to_hdf(h5_rawfile, "data")
-                qualityCtrl.to_hdf(h5_qcfile, "data")
+                
+        # Close all PDF files
+        nanOnsetpdf.close()
+        nanOverallpdf.close()
+        nanSequencepdf.close()
+        pdf.close()
+        plt.close("all")
+        
+        # Save results to HDF files
+        if paramsSub:  # Only save if we have data
+            pd.DataFrame(paramsSub).to_hdf(h5_file, "data")
+            pd.DataFrame(paramsRaw).to_hdf(h5_rawfile, "data")
+            pd.DataFrame(qualityCtrl).to_hdf(h5_qcfile, "data")
             
-        except Exception:
-            print(f"Error! \n Couldn't process {sub}, condition {session}")
-            traceback.print_exc()
-            trials_failed += 1
-    
-    # Return summary of processing for this subject-condition
-    return {
-        "subject": sub,
-        "condition": os.path.basename(main_dir),
-        "sessions_processed": len(sessions),
-        "trials_processed": trials_processed,
-        "trials_failed": trials_failed,
-        "status": "Completed"
-    }
+            # Verify we can read the file
+            abc = pd.read_hdf(h5_file, "data")
+            print(f"Successfully processed {sub}, session {session}")
+            del paramsRaw, abc, paramsSub, qualityCtrl, newResult
+            return f"Success: {sub}, session {session}"
+        else:
+            return f"No data processed for {sub}, session {session}"
+            
+    except Exception as e:
+        print(f"Error processing {sub}, session {session}: {str(e)}")
+        traceback.print_exc()
+        return f"Error: {sub}, session {session} - {str(e)}"
 
 
-def create_subject_condition_pairs(voluntary_dir, imposed_dir):
-    """
-    Create a list of all subject-condition pairs to process
+def get_subjects_by_directory(main_dir):
+    """Get list of subjects from a directory"""
+    subject_sessions = get_subjects_and_sessions(main_dir)
+    return [f"sub-{str(num).zfill(3)}" for num in subject_sessions.keys()]
+
+
+def get_all_subject_session_pairs(main_dir):
+    """Get all subject-session pairs for a directory"""
+    subject_sessions = get_subjects_and_sessions(main_dir)
     
-    Returns:
-        list: List of (subject, condition_dir) tuples
-    """
+    # Convert to the format expected by the processing function
     pairs = []
-    
-    # Get subjects from voluntary direction
-    vol_subjects = get_subjects_and_sessions(voluntary_dir)
-    vol_subjects_list = [f"sub-{str(num).zfill(3)}" for num in vol_subjects.keys()]
-    
-    # Get subjects from imposed direction
-    imp_subjects = get_subjects_and_sessions(imposed_dir)
-    imp_subjects_list = [f"sub-{str(num).zfill(3)}" for num in imp_subjects.keys()]
-    
-    # Create pairs for voluntary condition
-    for sub in vol_subjects_list:
-        pairs.append((sub, voluntary_dir))
-    
-    # Create pairs for imposed condition
-    for sub in imp_subjects_list:
-        pairs.append((sub, imposed_dir))
+    for sub_num, sessions in subject_sessions.items():
+        sub = f"sub-{str(sub_num).zfill(3)}"
+        for sess in sessions:
+            sess_str = f"session-{str(sess).zfill(2)}"
+            pairs.append((sub, sess_str))
     
     return pairs
 
 
+def main():
+    """Main function to process all directories in parallel."""
+    print("Starting parallel processing...")
+    
+    # Process each directory separately
+    for main_dir in [ACTIVE_DIR, PASSIVE_DIR]:
+        print(f"Processing directory: {main_dir}")
+        
+        # Get all subject-session pairs for this directory
+        subject_session_pairs = get_all_subject_session_pairs(main_dir)
+        
+        # Process all pairs in parallel
+        results = Parallel(n_jobs=-1, verbose=10)(
+            delayed(process_subject_session)(main_dir, sub, session) 
+            for sub, session in subject_session_pairs
+        )
+        
+        # Print results summary
+        success_count = sum(1 for result in results if result.startswith("Success"))
+        print(f"Directory {main_dir} complete: {success_count}/{len(results)} successful")
+    
+    print("All processing complete!")
+
+
 if __name__ == "__main__":
-    print("Current working directory:", os.getcwd())
-    print("Contents of current directory:", os.listdir())
-
-    # Define directories
-    dirVoluntary = "/envau/work/brainets/oueld.h/contextuaLearning/directionCue/results_voluntaryDirection/"
-    dirImposed = "/envau/work/brainets/oueld.h/contextuaLearning/directionCue/results_imposeDirection/"
-    
-    # Screen parameters
-    screen_width_px = 1920  # px
-    screen_height_px = 1080  # px
-    screen_width_cm = 70  # cm
-    viewingDistance = 57.0  # cm
-
-    tan = np.arctan((screen_width_cm / 2) / viewingDistance)
-    screen_width_deg = 2.0 * tan * 180 / np.pi
-    px_per_deg = screen_width_px / screen_width_deg
-    # the actual value coming from eylink setup
-    px_per_deg = 27.4620
-    
-    # Create combined list of all subject-condition pairs
-    subject_condition_pairs = create_subject_condition_pairs(dirVoluntary, dirImposed)
-    print(f"Found {len(subject_condition_pairs)} subject-condition pairs to process")
-    
-    # Get saccade parameters for all subjects
-    all_subjects = [pair[0] for pair in subject_condition_pairs]
-    sacc_params = get_unified_sacc_params(all_subjects)
-    
-    print(f"Starting parallel processing of {len(subject_condition_pairs)} subject-condition pairs")
-    # You can adjust n_jobs based on your system's CPU cores
-    # Use n_jobs=-1 to use all available cores
-    results = Parallel(n_jobs=-1, verbose=10)(
-        delayed(process_subject_condition)(
-            sub, 
-            cond, 
-            sacc_params, 
-            px_per_deg, 
-            showPlots=0, 
-            manualCheck=0
-        ) 
-        for sub, cond in subject_condition_pairs
-    )
-    
-    print("Completed parallel processing")
-    print("Results summary:")
-    for result in results:
-        print(result)
+    main()

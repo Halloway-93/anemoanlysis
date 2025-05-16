@@ -627,7 +627,7 @@ for idxSub, sub in enumerate(subjects):
                         newResult["trialType"] = trialType_txt
                         # newResult["trialTgUP"] = trialTgUP_txt
                         newResult["target_dir"] = param_exp["dir_target"][trial]
-                        newResult["time_x"] = time
+                        newResult["time"] = time
                         newResult["velocity_x"] = vel_x
                         newResult["saccades"] = np.array(new_saccades)
 
@@ -686,7 +686,7 @@ for idxSub, sub in enumerate(subjects):
                         f = plotFig(
                             trial,
                             newResult["target_dir"],
-                            newResult["time_x"],
+                            newResult["time"],
                             newResult["velocity_x"],
                             eq_x,
                             newResult["aSPon"],

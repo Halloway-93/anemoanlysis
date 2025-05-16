@@ -15,7 +15,7 @@ from matplotlib.patches import Patch
 import os
 from statannotations.Annotator import Annotator
 # %%
-main_dir = "/Users/mango/oueld.h/contextuaLearning/ColorCue/data/"
+main_dir = "/Volumes/work/brainets/oueld.h/contextuaLearning/ColorCue/data/"
 pathFig = "/Users/mango/Contextual-Learning/ColorCue/figures/voluntaryColor/"
 df = pd.read_csv("/Users/mango/anemoanlysis/LMM/dataANEMO_allSubs_activeColorCP.csv")
 RedcolorsPalette = ["#e83865", "#cc3131"]
