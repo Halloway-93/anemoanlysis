@@ -12,9 +12,9 @@ import traceback
 warnings.filterwarnings("ignore")
 
 # Define the main directories
-ACTIVE_COLOR_DIR = "/envau/work/brainets/oueld.h/contextuaLearning/ColorCue/data"
-PASSIVE_COLOR_DIR = "/envau/work/brainets/oueld.h/contextuaLearning/ColorCue/imposedColorData"
-ATTENTION_COLOR_DIR = "/envau/work/brainets/oueld.h/attentionalTask/data"
+ACTIVE_COLOR_DIR = "/Users/mango/oueld.h/contextuaLearning/ColorCue/data"
+PASSIVE_COLOR_DIR = "/Users/mango/oueld.h/contextuaLearning/ColorCue/imposedColorData"
+ATTENTION_COLOR_DIR = "/Users/mango/oueld.h/attentionalTask/data"
 
 # ANEMO parameters
 screen_width_px = 1920  # px
@@ -201,20 +201,20 @@ def process_subject_condition(main_dir, sub, cond):
                     sample_rate=1000,
                 )
 
-                # Detect saccades
-                misac = A.detec_misac(
-                    velocity_x=velocity_deg_x,
-                    velocity_y=velocity_deg_y,
-                    t_0=arg.t_0,
-                    VFAC=5,
-                    mindur=sacc_params[1]["mindur"],
-                    maxdur=sacc_params[1]["maxdur"],
-                    minsep=sacc_params[1]["minsep"],
-                )
-
                 new_saccades = arg.saccades
-                [sacc.extend([0, 0, 0, 0, 0]) for sacc in misac]  # transform misac into the eyelink format
-                new_saccades.extend(misac)
+                # Detect saccades
+                # misac = A.detec_misac(
+                #     velocity_x=velocity_deg_x,
+                #     velocity_y=velocity_deg_y,
+                #     t_0=arg.t_0,
+                #     VFAC=5,
+                #     mindur=sacc_params[1]["mindur"],
+                #     maxdur=sacc_params[1]["maxdur"],
+                #     minsep=sacc_params[1]["minsep"],
+                # )
+
+                # [sacc.extend([0, 0, 0, 0, 0]) for sacc in misac]  # transform misac into the eyelink format
+                # new_saccades.extend(misac)
 
                 sac = A.detec_sac(
                     velocity_x=velocity_deg_x,

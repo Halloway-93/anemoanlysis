@@ -291,10 +291,10 @@ for idxSub, sub in enumerate(subjects):
 
                     new_saccades = arg.saccades
                     # Commenting the miccorsaccades.
-                    # [
-                    #     sacc.extend([0, 0, 0, 0, 0]) for sacc in misac
-                    # ]  # transform misac into the eyelink format
-                    # new_saccades.extend(misac)
+                    [
+                        sacc.extend([0, 0, 0, 0, 0]) for sacc in misac
+                    ]  # transform misac into the eyelink format
+                    new_saccades.extend(misac)
                     # new_saccades = [x[:2] for x in new_saccades]
 
                     sac = A.detec_sac(
@@ -346,7 +346,7 @@ for idxSub, sub in enumerate(subjects):
                     # It should print 0 for all the trials if everything is good.
                     print("time:", time[TargetOnIndex])
                     # indices to keep
-                    idx2keep = np.logical_and(time >= -200, time <= 600)
+                    idx2keep = np.logical_and(time >= -200, time < 600)
                     time = time[idx2keep]
                     pos_y = arg.data_y[idx2keep]
                     vel_y = velocity_y_NAN[idx2keep]
@@ -394,9 +394,9 @@ for idxSub, sub in enumerate(subjects):
 
                     if (
                         np.mean(
-                            np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])
+                            np.isnan(vel_x[newTargetOnset - 200 : newTargetOnset + 100])
                         )
-                        > 0.5
+                        > (1/3)
                         or np.mean(np.isnan(vel_x)) > 0.7
                         or longestNanRun(
                             vel_x[newTargetOnset - 100: newTargetOnset +100]
@@ -416,7 +416,7 @@ for idxSub, sub in enumerate(subjects):
                         plt.clf()
                         fig = plt.figure(figsize=(12, 4))
                         plt.suptitle("Trial %d" % trial)
-                        plt.subplot(1, 3, 1)
+                        plt.subplot(1, 2, 1)
                         plt.plot(time, vel_x)
                         plt.axvline(x=time[0], linewidth=1, linestyle="--", color="k")
                         plt.axvline(x=time[-1], linewidth=1, linestyle="--", color="k")
@@ -424,7 +424,7 @@ for idxSub, sub in enumerate(subjects):
                         plt.ylim(-15, 15)
                         plt.xlabel("Time (ms)")
                         plt.ylabel("Velocity - x axis")
-                        plt.subplot(1, 3, 2)
+                        plt.subplot(1, 2, 2)
                         plt.plot(time, vel_y)
                         plt.axvline(x=time[0], linewidth=1, linestyle="--", color="k")
                         plt.axvline(x=time[-1], linewidth=1, linestyle="--", color="k")
@@ -432,10 +432,10 @@ for idxSub, sub in enumerate(subjects):
                         plt.ylim(-35, 35)
                         plt.xlabel("Time (ms)")
                         plt.ylabel("Velocity - y axis")
-                        plt.subplot(1, 3, 3)
-                        plt.plot(vel_x, vel_y)
-                        plt.xlabel("Velocity - x axis")
-                        plt.ylabel("Velocity - x axis")
+                        # plt.subplot(1, 3, 3)
+                        # plt.plot(vel_x, vel_y)
+                        # plt.xlabel("Velocity - x axis")
+                        # plt.ylabel("Velocity - x axis")
                         # plt.show()
                         # plt.pause(0.050)
                         # plt.clf()

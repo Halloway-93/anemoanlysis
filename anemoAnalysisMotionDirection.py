@@ -432,7 +432,7 @@ model = smf.mixedlm(
     data=df,
     re_formula="~proba*firstSeg",
     groups=df["sub"],
-).fit()
+).fit(method=['lbfgs'])
 model.summary()
 # %%
 # Extract fixed effects
@@ -1192,7 +1192,6 @@ plt.savefig(pathFig + "/aSPvinterDiffUp.png",dpi=300, transparent=True)
 plt.show()
 # %%
 
-# %%
 g=sns.catplot(
     data=df_long[df_long['firstSeg']=='Down'],
     x="proba",
@@ -1693,8 +1692,8 @@ plt.axvline(0, color="black", linestyle="--")
 plt.title("Participants adaptaion across probabilites")
 plt.xlabel("up")
 plt.ylabel("down")
-plt.ylim(-4, 4)
-plt.xlim(-4, 4)
+plt.ylim(-6, 6)
+plt.xlim(-6, 6)
 plt.legend(title="proba")
 plt.tight_layout()
 plt.show()
@@ -1753,14 +1752,4 @@ pivot_table.columns
 # )
 #
 # pivot_table.columns
-# %%
-sns.scatterplot(
-    data=pivot_table, x="('right', 'up')", y="('right', 'down')", hue="proba"
-)
-# Or alternatively
-plt.axhline(y=0, color="k", linestyle="--")  # Horizontal line at y=0
-plt.axvline(x=0, color="k", linestyle="--")  # Vertical line at x=0
-plt.xlim(-2.5, 2.5)
-plt.ylim(-2.5, 2.5)
-plt.show()
 # %%

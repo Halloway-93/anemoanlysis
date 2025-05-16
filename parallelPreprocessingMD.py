@@ -25,7 +25,7 @@ from joblib import Parallel, delayed
 print("Current working directory:", os.getcwd())
 print("Contents of current directory:", os.listdir())
 
-motionDirectionCue = "/envau/work/brainets/oueld.h/contextuaLearning/motionDirectionCue"
+motionDirectionCue = "/Users/mango/oueld.h/contextuaLearning/motionDirectionCue"
 main_dir = motionDirectionCue
 os.chdir(main_dir)
 
@@ -428,8 +428,7 @@ def process_subject_condition(sub, cond):
                     newResult["trialType"] = trialType_txt
                     newResult["target_dir"] = current_param_exp["dir_target"][trial]
 
-                    x = arg.trackertime - arg.TargetOn - 600
-                    newResult["time"] = x[:-time_sup]
+                    newResult["time"] = time
                     newResult["velocity_x"], newResult["velocity_y"] = (
                         velocity_x_NAN[:-time_sup],
                         velocity_y_NAN[:-time_sup],
