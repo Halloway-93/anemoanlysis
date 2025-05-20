@@ -15,7 +15,7 @@ from matplotlib.patches import Patch
 import os
 from statannotations.Annotator import Annotator
 # %%
-main_dir = "/Volumes/work/brainets/oueld.h/contextuaLearning/ColorCue/data/"
+main_dir = "/Users/mango/oueld.h/contextuaLearning/ColorCue/data/"
 pathFig = "/Users/mango/Contextual-Learning/ColorCue/figures/voluntaryColor/"
 df = pd.read_csv("/Users/mango/anemoanlysis/LMM/dataANEMO_allSubs_activeColorCP.csv")
 RedcolorsPalette = ["#e83865", "#cc3131"]
@@ -49,27 +49,6 @@ allEvents["trial_color_chosen"] = allEvents["trial_color_chosen"].apply(
     lambda x: "red" if x == 1 else "green"
 )
 df.rename(columns={"trial_color_UP": "trialTgUP"}, inplace=True)
-# %%
-for s in df["sub"].unique():
-    l1 = len(
-        df[
-            (df["proba"] == 0.25)
-            & (df["color"] == "Red")
-            & (df["sub"] == s)
-            & (df["aSPv"] > 0)
-        ]
-    )
-    l2 = len(
-        df[
-            (df["proba"] == 0.25)
-            & (df["color"] == "Red")
-            & (df["sub"] == s)
-            & (df["aSPv"] < 0)
-        ]
-    )
-    print(
-        f" Subject{s}, Ratio of probability matching color green P=0.25: {l1/(l1+l2)}"
-    )
 # %%
 sns.histplot(data=df, x="aSPv")
 plt.show()
@@ -113,6 +92,7 @@ for sub in df["sub"].unique():
                     "color_prev",
                 ] = prev_trial["trial_color_chosen"].values[0]
 # %%
+df = df[~(( df["aSPv"] < -8 ) | ( df["aSPv"] > 8 ))]
 balance = df.groupby(["color", "sub", "proba"])["trial"].count().reset_index()
 print(balance)
 # %%
@@ -134,6 +114,9 @@ df["TD_prev"] = df["TD_prev"].apply(lambda x: "right" if x == 1 else "left")
 # %%
 df = df[(df["sub"] != 9)]
 df = df[(df["sub"] != 15)]
+# df = df[(df["sub"] != 13)]
+# df = df[(df["sub"] != 14)]
+# df = df[(df["sub"] != 16)]
 # df = df[df["sub"].isin([1, 2, 5, 7, 8, 11, 13])]
 # df = df[(df["aSPoff"] <= 120)]
 # %%
@@ -832,28 +815,6 @@ sns.catplot(
 plt.savefig(pathFig + "/aSPvAcrossprobaviolin.png",dpi=300, transparent=True)
 plt.show()
 # %%
-# Toggle full screen mode
-figManager = plt.get_current_fig_manager()
-figManager.full_screen_toggle()
-sns.pointplot(
-    data=df[df.color == "Red"],
-    x="proba",
-    y="aSPv",
-    capsize=0.1,
-    errorbar="ci",
-    hue="sub",
-    palette="tab20",
-    alpha=0.8,
-)
-# _ = plt.title("Horizontal aSPv Per Subject: color Red", fontsize=30)
-plt.legend(fontsize=20)
-plt.xlabel(r"$\mathbb{P}$(Right|Red)", fontsize=30)
-plt.xticks(fontsize=25)
-plt.yticks(fontsize=25)
-plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsRed.png",dpi=300, transparent=True)
-plt.show()
-# %%
 fig = plt.figure()
 # Toggle full screen mode
 figManager = plt.get_current_fig_manager()
@@ -1208,7 +1169,7 @@ pairs = [
 
 ]
 annotator = Annotator(g.ax, pairs, data=dd, x='proba', y="aSPv", hue=hue,hue_order=hue_order, order=order)
-annotator.configure(test='t-test_paired', text_format='star', loc='outside')
+annotator.configure(test='t-test_paired', text_format='star', loc='outside',fontsize=20)
 annotator.apply_and_annotate()
 legend_elements = [
     Patch(facecolor=GreencolorsPalette[1], alpha=1, label="Green"),
@@ -1433,12 +1394,6 @@ pairs = [
     ((0.25, "left"), (0.25, "right")),
     ((0.5, "left"), (0.5, "right")),
     ((0.75, "left"), (0.75, "right")),
-    # ((0.25, "Down"), (0.5, "Down")),
-    # ((0.75, "Down"), (0.5, "Down")),
-    # ((0.25, "Up"), (0.5, "Up")),
-    # ((0.75, "Up"), (0.5, "Up"))
-
-
 ]
 annotator = Annotator(g.ax, pairs,    data=dd[dd.color == "Green"], x='proba', y="aSPv", hue=hue,hue_order=hue_order, order=order)
 annotator.configure(test='t-test_paired', text_format='star', loc='outside',fontsize=20)
@@ -1525,7 +1480,7 @@ pairs = [
 
 
 ]
-annotator = Annotator(g.ax, pairs,    data=dd[dd.color == "Green"], x='proba', y="aSPv", hue=hue,hue_order=hue_order, order=order)
+annotator = Annotator(g.ax, pairs,    data=dd[dd.color == "Red"], x='proba', y="aSPv", hue=hue,hue_order=hue_order, order=order)
 annotator.configure(test='t-test_paired', text_format='star', loc='outside',fontsize=20)
 annotator.apply_and_annotate()
 
@@ -1594,18 +1549,18 @@ learningCurveInteraction[
 ]
 # %%
 
-df_prime[
-    (df_prime["sub"] == 15)
-    & (df_prime["color"] == "Green")
-    & (df_prime["proba"] == 0.5)
-    & (df_prime["interaction"] == ("right", "green"))
-]["aSPv"]
-# %%
-df_prime[
-    (df_prime["sub"] == 15)
-    & (df_prime["color"] == "Green")
-    & (df_prime["proba"] == 0.5)
-]["interaction"].value_counts()
+# df_prime[
+#     (df_prime["sub"] == 15)
+#     & (df_prime["color"] == "Green")
+#     & (df_prime["proba"] == 0.5)
+#     & (df_prime["interaction"] == ("right", "green"))
+# ]["aSPv"]
+# # %%
+# df_prime[
+#     (df_prime["sub"] == 15)
+#     & (df_prime["color"] == "Green")
+#     & (df_prime["proba"] == 0.5)
+# ]["interaction"].value_counts()
 # %%
 df_prime.groupby(["sub", "proba", "interaction", "color"]).count()[["aSPv"]]
 # %%
@@ -1838,25 +1793,11 @@ learningCurveInteraction[
     learningCurveInteraction["aSPv"] == learningCurveInteraction["aSPv"].min()
 ]
 # %%
-plt.hist(
-    df[
-        (df["sub"] == 15)
-        & (df["interaction"] == ("right", "green"))
-        & (df["proba"] == 0.5)
-    ]["aSPv"].values
-)
-np.mean(
-    df[
-        (df["sub"] == 15)
-        & (df["interaction"] == ("right", "green"))
-        & (df["proba"] == 0.5)
-    ]["aSPv"].values
-)
-# %%
 model = smf.mixedlm(
+
     "aSPv~  C(color)*C(TD_prev)",
     data=df[df.proba == 0.25],
-    re_formula="~TD_prev",
+    re_formula="~color*TD_prev",
     groups=df[df.proba == 0.25]["sub"],
 ).fit(method="lbfgs")
 model.summary()
@@ -1870,9 +1811,9 @@ model.summary()
 # model.summary()
 # %%
 model = smf.mixedlm(
-    "aSPv~  C(color,Treatment) + C(TD_prev)",
+    "aSPv~  color* TD_prev",
     data=df[df.proba == 0.75],
-    re_formula="~TD_prev",
+    re_formula="~color*TD_prev",
     groups=df[df.proba == 0.75]["sub"],
 ).fit(method="lbfgs")
 model.summary()
@@ -1880,7 +1821,7 @@ model.summary()
 model = smf.mixedlm(
     "aSPv~  C(color)*C(TD_prev)",
     data=df[df.proba == 0.50],
-    re_formula="~TD_prev",
+    re_formula="~color*TD_prev",
     groups=df[df.proba == 0.50]["sub"],
 ).fit(method=["lbfgs"])
 model.summary()

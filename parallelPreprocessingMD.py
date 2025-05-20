@@ -376,9 +376,9 @@ def process_subject_condition(sub, cond):
                 newTargetOnset = np.where(time == 0)[0][0]
 
                 if (
-                    np.mean(np.isnan(vel_x[newTargetOnset - 200 : newTargetOnset + 100])) > (1/3)
+                    np.mean(np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])) > (1)
                     or np.mean(np.isnan(vel_x)) > 0.7
-                    or longestNanRun(vel_x[newTargetOnset - 100: newTargetOnset + 100]) > 100
+                    or longestNanRun(vel_x[newTargetOnset - 100: newTargetOnset + 100]) > 200
                 ):
                     print("Skipping bad trial...")
 
@@ -411,13 +411,13 @@ def process_subject_condition(sub, cond):
                         print("too many NaNs overall")
                         reason = reason + " >{0} of NaNs overall".format(0.6)
                         nanOverallpdf.savefig(fig)
-                    elif longestNanRun(vel_x[newTargetOnset - 100 : newTargetOnset + 100]) > 100:
+                    elif longestNanRun(vel_x[newTargetOnset - 100 : newTargetOnset + 100]) > 200:
                         print("at least one nan sequence with more than 200ms")
                         reason = reason + " At least one nan sequence with more than 200ms"
                         nanSequencepdf.savefig(fig)
-                    elif np.mean(np.isnan(vel_x[newTargetOnset - 200 : newTargetOnset + 100])) > (1/3):
+                    elif np.mean(np.isnan(vel_x[newTargetOnset - 100 : newTargetOnset + 100])) > (1):
                         print("too many NaNs around the start of the pursuit")
-                        reason = reason + " >1/3 of NaNs around the start of the pursuit"
+                        reason = reason + " >50% of NaNs around the start of the pursuit"
                         nanOnsetpdf.savefig(fig)
 
                     plt.close(fig)
@@ -649,7 +649,6 @@ for sub in subjects:
 # You might want to adjust this based on your system capabilities
 if __name__ == "__main__":
     print(f"Starting parallel processing of {len(subject_condition_pairs)} subject-condition pairs")
-    # You can adjust n_jobs based on your system's CPU cores
     # Use n_jobs=-1 to use all available cores
     results = Parallel(n_jobs=-1, verbose=10)(
         delayed(process_subject_condition)(sub, cond) 

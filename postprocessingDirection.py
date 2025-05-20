@@ -85,7 +85,7 @@ dirVoluntary = (
 dirImposed = (
     "/Users/mango/oueld.h/contextuaLearning/directionCue/results_imposeDirection/"
 )
-main_dir = dirImposed
+main_dir = dirImposed 
 
 subject_sessions = get_subjects_and_sessions(main_dir)
 

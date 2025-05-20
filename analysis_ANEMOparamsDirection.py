@@ -96,19 +96,14 @@ def get_subjects_and_sessions(base_path):
 
     return dict(sorted(subjects.items()))
 
-
 # %%
 
 # Example usage:
 print("Current working directory:", os.getcwd())
 print("Contents of current directory:", os.listdir())
 
-dirVoluntary = (
-    "/Users/mango/oueld.h/contextuaLearning/directionCue/results_voluntaryDirection/"
-)
-dirImposed = (
-    "/Users/mango/oueld.h/contextuaLearning/directionCue/results_imposeDirection/"
-)
+dirVoluntary = "/Users/mango/oueld.h/contextuaLearning/directionCue/results_voluntaryDirection/"
+dirImposed = "/Users/mango/oueld.h/contextuaLearning/directionCue/results_imposeDirection/"
 main_dir = dirImposed
 
 os.chdir(main_dir)
@@ -121,12 +116,6 @@ sessions_by_subject = {
     f"sub-{str(sub).zfill(3)}": [f"session-{str(sess).zfill(2)}" for sess in sessions]
     for sub, sessions in subject_sessions.items()
 }
-
-
-# colormap = {
-#     "Red": np.array([255, 25, 7, 255]) / 255,
-#     "Green": np.array([25, 255, 120, 255]) / 255,
-# }
 
 # # %% violinplots + export mean Velocities
 print("Plotting parameters - violin plots")

@@ -201,7 +201,6 @@ def process_subject_condition(main_dir, sub, cond):
                     sample_rate=1000,
                 )
 
-                new_saccades = arg.saccades
                 # Detect saccades
                 # misac = A.detec_misac(
                 #     velocity_x=velocity_deg_x,

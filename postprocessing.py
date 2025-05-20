@@ -30,10 +30,10 @@ import traceback
 # %% Parameters
 # run always
 
-activeColor = "/Volumes/work/brainets/oueld.h/contextuaLearning/ColorCue/data"
+activeColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/data"
 passiveColor = "/Users/mango/oueld.h/contextuaLearning/ColorCue/imposedColorData"
 attentionColor = "/Users/mango/oueld.h/attentionalTask/data"
-main_dir = activeColor
+main_dir = attentionColor
 os.chdir(main_dir)
 
 

@@ -71,11 +71,12 @@ for sub in df["sub"].unique():
 # %%
 
 df=df[~( df["TD_prev"].isna() )]
+df=df[~( df["training"]=='yes' )]
 # %%
-
 # df = df[~((df["sub"] == 6) & (df["proba"] == 0.5))]
 # df = df[~((df["sub"] == 6) & (df["proba"] == 0.5))]
-df = df[~((df["sub"] == 2)|(df["sub"] == 4)| (df["sub"] == 12))]
+df = df[~((df["sub"] == 4)| (df["sub"] == 2)| (df["sub"] == 12))]
+# df = df[~((df["sub"] == 12))]
 # %%
 df["TD_prev"] = df["TD_prev"].apply(lambda x: "right" if x == 1 else "left")
 df["interaction"] = list(zip(df["TD_prev"], df["arrow_prev"]))
@@ -86,7 +87,7 @@ df[df["aSPv"] == df["aSPv"].max()]["aSPv"]
 sns.histplot(data=df, x="aSPv")
 plt.show()
 # %%
-badTrials = df[( df["aSPv"] < -11 ) | ( df["aSPv"] > 11 )]["aSPv"]
+badTrials = df[( df["aSPv"] < - 8) | ( df["aSPv"] > 8 )]["aSPv"]
 print(badTrials )
 # %%
 df = df[~(( df["aSPv"] < -8 ) | ( df["aSPv"] > 8 ))]
@@ -319,11 +320,11 @@ plt.savefig(pathFig + "/individualsDOWNFullProba.png",dpi=300, transparent=True)
 plt.show()
 # %%
 model = smf.mixedlm(
-    "aSPv~proba*arrow",
+    "aSPv~proba*arrow*TD_prev",
     data=df,
-    re_formula="~proba*arrow",
+    re_formula="~proba*arrow*TD_prev",
     groups=df["sub"],
-).fit()
+).fit(method=['lbfgs'])
 model.summary()
 # %%
 downarrowsPalette = ["#0F68A9", "#A2D9FF"]
@@ -467,8 +468,8 @@ for _, row in re_df.iterrows():
 # Fixed effect mean lines (thick black)
 mean_green = intc + slope * proba_range
 mean_red = (intc + color_effect) + (slope + interaction) * proba_range
-ax.plot(proba_range, mean_green, color='black', linewidth=3, label='Green mean')
-ax.plot(proba_range, mean_red, color='black', linewidth=3, linestyle='--', label='Red mean')
+ax.plot(proba_range, mean_green, color='black', linewidth=3, label='Down mean')
+ax.plot(proba_range, mean_red, color='black', linewidth=3, linestyle='--', label='Up mean')
 
 # Labels and legend
 ax.set_xlabel('proba')
@@ -518,7 +519,7 @@ model = smf.mixedlm(
     data=df[df.proba == 0.5],
     re_formula="~arrow",
     groups=df[df.proba == 0.5]["sub"],
-).fit()
+).fit(method=['lbfgs'])
 model.summary()
 
 
@@ -718,10 +719,6 @@ pairs = [
     (("up",0.25), ('up',0.50)),
     (("up",0.75), ('up',0.50)),
     (("up",0.25), ('up',0.75)),
-
-    # (("Down",0.25), ('Up',0.25)),
-    # (("Down",0.5), ('Up',0.50)),
-    # (("Down",0.75), ('Up',0.75)),
 ]
 annotator = Annotator(g.ax, pairs, data=dd, x='arrow', y="aSPv", hue="proba",hue_order=hue_order, order=order)
 annotator.configure(test='t-test_paired',  loc='outside',fontsize=20,comparisons_correction='HB')
@@ -1153,7 +1150,7 @@ model = smf.mixedlm(
     data=df[df.proba == 0.25],
     re_formula="~arrow*TD_prev",
     groups=df[df.proba == 0.25]["sub"],
-).fit(method="lbfgs")
+).fit(method=['lbfgs'])
 model.summary()
 # %%
 model = smf.mixedlm(
@@ -1161,7 +1158,7 @@ model = smf.mixedlm(
     data=df[df.proba == 0.75],
     re_formula="~arrow*TD_prev",
     groups=df[df.proba == 0.75]["sub"],
-).fit(method="lbfgs")
+).fit(method=[ "lbfgs" ])
 model.summary()
 # %%
 model = smf.mixedlm(
@@ -1402,6 +1399,14 @@ for sub in balance["sub"].unique():
     plt.show()
 # %%
 dd = df.groupby(["sub", "arrow", "proba"])[["aSPv"]].mean().reset_index()
+# %%
+
+ttest_results = pg.ttest(
+    x=dd[(dd["proba"] == 0.25) & (dd["arrow"] == "up")]["aSPv"],
+    y=dd[(dd["proba"] == 0.5) & (dd["arrow"] == "up")]["aSPv"],
+    paired=True,
+)
+print(ttest_results)
 # %%
 np.abs(dd.aSPv.values).max()
 # %%
@@ -1681,52 +1686,6 @@ plt.tight_layout()
 plt.savefig(pathFig + "/asemAcrossprobaviolinnfp.png",dpi=300, transparent=True)
 plt.show()
 
-# %%
-fig = plt.figure()
-# Toggle full screen mode
-figManager = plt.get_current_fig_manager()
-figManager.full_screen_toggle()
-sns.pointplot(
-    data=df[df.arrow == "up"],
-    x="proba",
-    y="aSPv",
-    capsize=0.1,
-    errorbar="ci",
-    hue="sub",
-    alpha=0.7,
-    palette="tab20",
-)
-_ = plt.title("Horizontal aSPv Per Subject: Arrow UP", fontsize=30)
-plt.legend(fontsize=20)
-plt.xlabel("P(Right|UP)", fontsize=30)
-plt.xticks(fontsize=20)
-plt.yticks(fontsize=20)
-plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsUP.png",dpi=300, transparent=True)
-plt.show()
-# %%
-fig = plt.figure()
-# Toggle full screen mode
-figManager = plt.get_current_fig_manager()
-figManager.full_screen_toggle()
-sns.pointplot(
-    data=df[df.arrow == "down"],
-    x="proba",
-    y="aSPv",
-    capsize=0.1,
-    errorbar="ci",
-    hue="sub",
-    alpha=0.7,
-    palette="tab20",
-)
-_ = plt.title("Horizontal aSPv Per Subject: Arrow DOWN", fontsize=30)
-plt.legend(fontsize=10)
-plt.xlabel("P(Left|DOWN)", fontsize=30)
-plt.xticks(fontsize=20)
-plt.yticks(fontsize=20)
-plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsDOWN.png",dpi=300, transparent=True)
-plt.show()
 # %%
 model = smf.mixedlm(
     "aSPv~proba*arrow",
@@ -2249,7 +2208,7 @@ dd = df.groupby(["sub", "proba", "arrow", "TD_prev"])["aSPv"].mean().reset_index
 model = smf.mixedlm(
     "aSPv~  C(arrow)*C(TD_prev)",
     data=df[df.proba == 0.25],
-    re_formula="~TD_prev",
+    re_formula="~arrow*TD_prev",
     groups=df[df.proba == 0.25]["sub"],
 ).fit(method="lbfgs")
 model.summary()
@@ -2257,7 +2216,7 @@ model.summary()
 model = smf.mixedlm(
     "aSPv~  C(arrow)*C(TD_prev)",
     data=df[df.proba == 0.75],
-    re_formula="~TD_prev",
+    re_formula="~arrow*TD_prev",
     groups=df[df.proba == 0.75]["sub"],
 ).fit(method="lbfgs")
 model.summary()
