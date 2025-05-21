@@ -20,7 +20,8 @@ allEvents = pd.read_csv(os.path.join(main_dir, "allEvents.csv"))
 allEvents["trial"] = allEvents["trial"].values - 1
 allEvents.columns
 # %%
-# df = df[df["sub"] != 10]
+df = df[df["sub"] != 11]
+df = df[df["sub"] != 10]
 # %%
 df.rename(columns={"cond": "proba"}, inplace=True)
 print(df["sub"].unique())
@@ -66,26 +67,22 @@ for sub in df["sub"].unique():
 # %%
 df[df["TD_prev"].isna()]
 # %%
-# df = df[~((df["sub"] == 6) & (df["proba"] == 0.5))]
-# df = df[~((df["sub"] == 6) & (df["proba"] == 0.5))]
 df = df[~(df["TD_prev"].isna())]
 df[df["TD_prev"].isna()]
-# %%
 df["TD_prev"] = df["TD_prev"].apply(lambda x: "right" if x == 1 else "left")
 df["interaction"] = list(zip(df["TD_prev"], df["arrow_prev"]))
 # %%
+df[(df["TD_prev"].isna())]
 df[df["aSPv"] == df["aSPv"].max()]["aSPv"]
 # %%
 sns.histplot(data=df, x="aSPv")
 plt.show()
 # %%
-badTrials = df[( df["aSPv"] < - 8) | ( df["aSPv"] > 8 )]["aSPv"]
+badTrials = df[( df["aSPv"] < - 5) | ( df["aSPv"] > 5 )]["aSPv"]
 print(badTrials )
 # %%
-df = df[~(( df["aSPv"] < -8 ) | ( df["aSPv"] > 8 ))]
+df = df[~(( df["aSPv"] < -5 ) | ( df["aSPv"] > 5 ))]
 # %%
-balance = df.groupby(["arrow", "sub", "proba"])["trial"].count().reset_index()
-print(balance)
 balance = df.groupby(["arrow", "sub", "proba"])["trial"].count().reset_index()
 print(balance)
 # %%
@@ -93,10 +90,6 @@ for sub in balance["sub"].unique():
     sns.barplot(x="proba", y="trial", hue="arrow", data=balance[balance["sub"] == sub])
     plt.title(f"Subject {sub}")
     plt.show()
-# %%
-
-df = df[df["sub"] != 11]
-
 # %%
 dd = df.groupby(["sub", "arrow", "proba"])[["aSPv"]].mean().reset_index()
 # %%
@@ -271,52 +264,6 @@ plt.savefig(pathFig + "/asemAcrossprobaviolinFullProba.png",dpi=300, transparent
 plt.show()
 
 # %%
-fig = plt.figure()
-# Toggle full screen mode
-figManager = plt.get_current_fig_manager()
-figManager.full_screen_toggle()
-sns.pointplot(
-    data=df[df.arrow == "up"],
-    x="proba",
-    y="aSPv",
-    capsize=0.1,
-    errorbar="ci",
-    hue="sub",
-    alpha=0.7,
-    palette="tab20",
-)
-_ = plt.title("Horizontal aSPv Per Subject: Arrow UP", fontsize=30)
-plt.legend(fontsize=20)
-plt.xlabel("P(Right|UP)", fontsize=30)
-plt.xticks(fontsize=20)
-plt.yticks(fontsize=20)
-plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsUPFullProba.png",dpi=300, transparent=True)
-plt.show()
-# %%
-fig = plt.figure()
-# Toggle full screen mode
-figManager = plt.get_current_fig_manager()
-figManager.full_screen_toggle()
-sns.pointplot(
-    data=df[df.arrow == "down"],
-    x="proba",
-    y="aSPv",
-    capsize=0.1,
-    errorbar="ci",
-    hue="sub",
-    alpha=0.7,
-    palette="tab20",
-)
-_ = plt.title("Horizontal aSPv Per Subject: Arrow DOWN", fontsize=30)
-plt.legend(fontsize=10)
-plt.xlabel("P(Left|DOWN)", fontsize=30)
-plt.xticks(fontsize=20)
-plt.yticks(fontsize=20)
-plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsDOWNFullProba.png",dpi=300, transparent=True)
-plt.show()
-# %%
 model = smf.mixedlm(
     "aSPv~proba*arrow",
     data=df,
@@ -466,8 +413,8 @@ for _, row in re_df.iterrows():
 # Fixed effect mean lines (thick black)
 mean_green = intc + slope * proba_range
 mean_red = (intc + color_effect) + (slope + interaction) * proba_range
-ax.plot(proba_range, mean_green, color='black', linewidth=3, label='Green mean')
-ax.plot(proba_range, mean_red, color='black', linewidth=3, linestyle='--', label='Red mean')
+ax.plot(proba_range, mean_green, color='black', linewidth=3, label='Down mean')
+ax.plot(proba_range, mean_red, color='black', linewidth=3, linestyle='--', label='Up mean')
 
 # Labels and legend
 ax.set_xlabel('proba')
@@ -491,7 +438,7 @@ model = smf.mixedlm(
     data=df[df.proba == 0.0],
     re_formula="~arrow",
     groups=df[df.proba == 0.0]["sub"],
-).fit(method=["lbfgs"])
+).fit()
 model.summary()
 
 # %%
@@ -509,7 +456,7 @@ model = smf.mixedlm(
     data=df[df.proba == 0.25],
     re_formula="~arrow",
     groups=df[df.proba == 0.25]["sub"],
-).fit(method=['lbfgs'])
+).fit()
 model.summary()
 # %%
 model = smf.mixedlm(
@@ -592,7 +539,6 @@ plt.tight_layout()
 plt.savefig(pathFig + "/aSPvarrowsFullProba.png",dpi=300, transparent=True)
 plt.show()
 # %%
-# dd=dd[~( ( dd['sub']=='sub-006' )&(dd['proba']==0.5) )]
 dd
 # %%
 def statistic(x, y,axis):
@@ -600,8 +546,8 @@ def statistic(x, y,axis):
     return np.mean(x,axis=axis) - np.mean(y,axis=axis)
 # %%
 ddd=dd[~( dd['sub']==6 )]
-x=ddd[( ddd['arrow']=='up' )& (ddd['proba']==0.75)]['aSPv'].values
-y=ddd[( ddd['arrow']=='up' )& ( ddd['proba']==0.5 )]['aSPv'].values
+x=ddd[( ddd['arrow']=='down' )& (ddd['proba']==0.75)]['aSPv'].values
+y=ddd[( ddd['arrow']=='down' )& ( ddd['proba']==0.5 )]['aSPv'].values
 statistic(x,y,0)
 # %%
 res = permutation_test(data=(x, y), statistic=statistic,permutation_type='samples', vectorized=True,n_resamples=2**(len(x)),)
@@ -717,10 +663,6 @@ pairs = [
     (("up",0.25), ('up',0.50)),
     (("up",0.75), ('up',0.50)),
     (("up",0.25), ('up',0.75)),
-
-    # (("Down",0.25), ('Up',0.25)),
-    # (("Down",0.5), ('Up',0.50)),
-    # (("Down",0.75), ('Up',0.75)),
 ]
 annotator = Annotator(g.ax, pairs, data=dd, x='arrow', y="aSPv", hue="proba",hue_order=hue_order, order=order)
 annotator.configure(test='t-test_paired',  loc='outside',fontsize=20,comparisons_correction='HB')
@@ -731,12 +673,12 @@ plt.ylabel("Horizontal aSPv (deg/s)", fontsize=25)
 plt.xticks(fontsize=25)
 plt.yticks(fontsize=25)
 
-viridis_colors = plt.cm.viridis([0, 0.5, 1])  # Maps to your 0.25, 0.50, 0.75 proba values
+viridis_colors = plt.cm.viridis([0, 0.25,0.5,   0.75, 1])  # Maps to your 0.25, 0.50, 0.75 proba values
 
 legend_elements = [
-    Patch(facecolor=viridis_colors[0], edgecolor='black', label='0.25'),
-    Patch(facecolor=viridis_colors[1], edgecolor='black', label='0.50'),
-    Patch(facecolor=viridis_colors[2], edgecolor='black', label='0.75')
+    Patch(facecolor=viridis_colors[1], edgecolor='black', label='0.25'),
+    Patch(facecolor=viridis_colors[2], edgecolor='black', label='0.50'),
+    Patch(facecolor=viridis_colors[3], edgecolor='black', label='0.75')
 ]
 g.ax.legend(
     handles=legend_elements, fontsize=20, title=r"$\mathbb{P}$(Right|Up)=$\mathbb{P}$(Left|Down)", title_fontsize=20
@@ -931,6 +873,83 @@ plt.tight_layout()
 plt.savefig(pathFig + "/aSPvupTDFullProba.png",dpi=300, transparent=True)
 plt.show()
 # %%
+pivot_df = dd.pivot_table(
+    index=['sub', 'proba', 'arrow'],
+    columns='TD_prev',
+    values='aSPv'
+)
+
+# Step 2: Calculate the difference (right - left)
+pivot_df['Diff'] = pivot_df['right'] - pivot_df['left']
+
+# Step 3: Reset index to get back to a regular dataframe format
+result_df = pivot_df.reset_index()
+
+# Display the result
+print(result_df)
+# %%
+# Create the plot using catplot
+g = sns.catplot(
+    data=result_df,
+    x="proba",
+    y="Diff",
+    hue="arrow",
+    kind="bar",
+    errorbar='se',
+    n_boot=1000,
+    palette=[downarrowsPalette[0],uparrowsPalette[0]],  # Same color for both
+    height=10,  # Set the height of the figure
+    aspect=1.5,
+    alpha=0.8,
+    capsize=0.1,
+    hue_order=["down", "up"],
+    legend=False,
+    fill=False,
+)
+
+# # Add hatching to the right bars
+# for i, bar in enumerate(g.ax.patches[len(g.ax.patches) // 2 :]):  # Second half of bars
+#     bar.set_facecolor("none")  # Make bar empty
+#     bar.set_hatch("///")  # Add diagonal lines
+#     bar.set_edgecolor(uparrowsPalette[0])  # Set edge color
+
+sns.stripplot(
+    data=result_df,
+    x="proba",
+    y="Diff",
+    hue="arrow",
+    hue_order=["down", "up"],
+    palette=[downarrowsPalette[0],uparrowsPalette[0]],  # Same color for both
+    dodge=True,
+    jitter=True,
+    linewidth=1,
+    size=6,
+    legend=False,
+)
+
+# Create custom legend
+
+legend_elements = [
+    Patch(facecolor=downarrowsPalette[0], alpha=1, label="Down"),
+    Patch(facecolor=uparrowsPalette[0], alpha=1, label="Up"),
+]
+g.ax.legend(
+    handles=legend_elements, fontsize=20, title="arrow", title_fontsize=20
+)
+plt.tight_layout()
+
+# Customize the plot
+# g.ax.set_title("Anticipatory Velocity Given Previous TD: arrow Up", fontsize=30)
+g.ax.set_xlabel(r"$\mathbb{P}$(Right|Up)", fontsize=25)
+g.ax.set_ylabel(" aSPv Diff (Previous TD: Right - Left ) (deg/s)", fontsize=20)
+g.ax.tick_params(labelsize=25)
+# g.ax.set_ylim(-1, 1)
+
+plt.tight_layout()
+plt.savefig(pathFig + "/aSPvTDiff.png",dpi=300, transparent=True)
+plt.show()
+
+# %%
 df["interaction"] = list(zip(df["TD_prev"], df["arrow_prev"]))
 df_prime = df[
     [
@@ -958,10 +977,244 @@ df_prime.groupby(["proba", "interaction", "arrow"]).count()[["aSPv"]]
 # %%
 print(learningCurveInteraction)
 # %%
+pivot_df = learningCurveInteraction.pivot_table(
+    index=['sub', 'proba', 'arrow'],
+    columns='interaction',
+    values='aSPv'
+)
+
+# Step 2: Calculate the difference (right - left)
+pivot_df['DiffDown'] = pivot_df[('right','down')] - pivot_df[('left','down')]
+pivot_df['DiffUp'] = pivot_df[('right','up')] - pivot_df[('left','up')]
+
+# Step 3: Reset index to get back to a regular dataframe format
+result_df = pivot_df.reset_index()
+
+# Display the result
+print(result_df)
+
+# %% 
+
+result_df.dropna(inplace=True)
+# %%
+
+
+def perm_test(x, y, n_perms=1000, stat=np.nanmean):
+    diff = np.abs(stat(x)-stat(y))
+    pooled = np.concatenate([x, y])
+    count = 0
+    for n in range(n_perms):
+        rng = np.random.default_rng(n)
+        rng.shuffle(pooled)
+        x_perm = pooled[:len(x)]
+        y_perm = pooled[len(x):]
+        diff_perm = np.abs(stat(x_perm)-stat(y_perm))
+        if diff_perm >= diff:
+            count += 1
+
+    pv = count / n_perms
+    return pv
+# %%
+perm_test(result_df[result_df['arrow']=='up']['DiffUp'].values,result_df[result_df['arrow']=='up']['DiffDown'].values)
+# %%
+perm_test(result_df[result_df['arrow']=='down']['DiffUp'].values,result_df[result_df['arrow']=='down']['DiffDown'].values)
+# %%
+perm_test(result_df[result_df['arrow']=='up']['DiffUp'].values,result_df[result_df['arrow']=='down']['DiffDown'].values)
+# %%
+perm_test(result_df[result_df['arrow']=='up']['DiffDown'].values,result_df[result_df['arrow']=='down']['DiffUp'].values)
+# %%
+melted_df = pd.melt(
+    result_df,
+    id_vars=["sub", "proba", "arrow"],
+    value_vars=["DiffDown", "DiffUp"],
+    var_name="DiffType",
+    value_name="Diff"
+)
+
+
+print(melted_df)
+# Set up the figure
+# %%
+# Create grouped bar plot
+g = sns.catplot(
+    data=melted_df,
+    x="proba",
+    y="Diff",
+    hue="arrow",
+    col="DiffType",  # Split by DiffType
+    kind="bar",
+    errorbar='ci',
+    n_boot=1000,
+    palette=[downarrowsPalette[0], uparrowsPalette[0]],
+    height=8,
+    aspect=1.2,
+    alpha=0.8,
+    capsize=0.1,
+    hue_order=["down", "up"],
+    fill=False,
+    legend=False,
+)
+
+# Add individual data points as strips
+for ax in g.axes.flat:
+    diff_type = ax.get_title().split(" ")[-1]  # Get the DiffType from title
+    sns.stripplot(
+        data=melted_df[melted_df["DiffType"] == diff_type],
+        x="proba",
+        y="Diff",
+        hue="arrow",
+        hue_order=["down", "up"],
+        palette=[downarrowsPalette[0], uparrowsPalette[0]],
+        dodge=True,
+        jitter=True,
+        linewidth=1,
+        size=6,
+        legend=False,
+        ax=ax
+    )
+
+# Create custom legend
+legend_elements = [
+    Patch(facecolor=downarrowsPalette[0], alpha=1, label="Down"),
+    Patch(facecolor=uparrowsPalette[0], alpha=1, label="Up"),
+]
+
+# Add legend to the figure
+plt.legend(
+    handles=legend_elements,
+    fontsize=15,
+    title="arrow",
+    title_fontsize=15,
+    # loc='upper center',
+    # bbox_to_anchor=(0.5, 1.05),
+    # ncol=2
+)
+
+# Customize the plot titles and labels
+g.set_titles("{col_name}")
+g.set_axis_labels(r"$\mathbb{P}$(Right|Up)", "aSPv Diff (Previous TD: Right - Left) (deg/s)")
+g.set_xticklabels(fontsize=20)
+g.set_yticklabels(fontsize=20)
+
+# Customize labels and ticks
+for ax in g.axes.flat:
+    ax.set_xlabel(r"$\mathbb{P}_{Up}$(Right)", fontsize=25)
+    ax.set_ylabel("aSPv Diff (Previous Trial: (Cue,Right) - (Cue,Left)) (deg/s)", fontsize=15)
+    ax.tick_params(labelsize=20)
+    
+    # Add statistical annotations if needed
+    order = [0.25, 0.5, 0.75]
+    hue_order = ["down", "up"]
+    pairs = [
+        ((0.25, "down"), (0.25, "up")),
+        ((0.5, "down"), (0.5, "up")),
+        ((0.75, "down"), (0.75, "up")),
+    ]
+    
+    # Add statistical annotations
+    diff_type = ax.get_title().split(" ")[-1]
+    subset_df = melted_df[melted_df["DiffType"] == diff_type]
+
+g.set_titles("")
+plt.tight_layout()
+plt.savefig("aSPvTDiff_combined.png", dpi=300, transparent=True)
+plt.show()
+# %%
+
+# Create a combined plot where one type uses hatching
+g = sns.catplot(
+    data=melted_df,
+    x="proba",
+    y="Diff",
+    hue="arrow",
+    col="DiffType",
+    kind="bar",
+    errorbar='ci',
+    n_boot=1000,
+    palette=[downarrowsPalette[0], uparrowsPalette[0]],
+    height=8,
+    aspect=1.,
+    alpha=0.8,
+    capsize=0.1,
+    hue_order=["down", "up"],
+    legend=False,
+    fill=False,
+)
+
+# Apply different patterns to distinguish between DiffDown and DiffUp
+for i, ax in enumerate(g.axes.flat):
+    bars = ax.patches
+    diff_type = ax.get_title().split(" ")[-1]
+    
+    # Apply hatching to one of the diff types
+    if diff_type == "DiffUp":
+        for bar in bars:
+            bar.set_hatch("///")
+            
+    # Add individual data points
+    sns.stripplot(
+        data=melted_df[melted_df["DiffType"] == diff_type],
+        x="proba",
+        y="Diff",
+        hue="arrow",
+        hue_order=["down", "up"],
+        palette=[downarrowsPalette[0], uparrowsPalette[0]],
+        dodge=True,
+        jitter=True,
+        linewidth=1,
+        size=6,
+        legend=False,
+        ax=ax
+    )
+
+# Create custom legend with both arrow and DiffType
+legend_elements = [
+    Patch(facecolor=downarrowsPalette[0], alpha=1, label="Down"),
+    Patch(facecolor=uparrowsPalette[0], alpha=1, label="Up"),
+    Patch(facecolor='gray', hatch="///", alpha=0.6, label="DiffUp"),
+    Patch(facecolor='gray', alpha=0.6, label="DiffDown"),
+]
+
+# Add legend to the figure
+g.figure.legend(
+    handles=legend_elements,
+    fontsize=15,
+    title="Types",
+    title_fontsize=15,
+    loc='upper center',
+    bbox_to_anchor=(0.88, .97),
+    ncol=2
+)
+
+# Customize the plot titles and labels
+g.set_titles("{col_name}")
+g.set_axis_labels(r"$\mathbb{P}_{Up}$(Right)", "aSPv Diff (Previous TD: Right - Left) (deg/s)")
+
+# Customize labels and ticks
+for ax in g.axes.flat:
+    ax.set_xlabel(r"$\mathbb{P}_{Up}$(Right)", fontsize=25)
+    ax.set_ylabel("aSPv Diff (Previous Trial: (Cue,Right) - (Cue,Left)) (deg/s)", fontsize=15)
+    ax.tick_params(labelsize=20)
+    
+    # Add statistical annotations if needed
+    order = [0.25, 0.5, 0.75]
+    hue_order = ["Down", "Up"]
+    pairs = [
+        ((0.25, "Down"), (0.25, "Up")),
+        ((0.5, "Down"), (0.5, "Up")),
+        ((0.75, "Down"), (0.75, "Up")),
+    ]
+    
+
+g.set_titles("")
+plt.tight_layout()
+plt.savefig("aSPvTDiff_patterned.png", dpi=300, transparent=True)
+plt.show()
+# %%
 learningCurveInteraction[
     learningCurveInteraction["aSPv"] == learningCurveInteraction["aSPv"].max()
 ]
-# %%
+# %%    
 df["interaction"].unique()
 # %%
 hue_order = [
@@ -972,6 +1225,7 @@ hue_order = [
 ]
 colorsPalettes = ["#0F68A9", "#FAAE7B"]
 # %%
+
 # Create the base plot
 g = sns.catplot(
     data=df_prime[df_prime.arrow == "up"],
@@ -1392,9 +1646,9 @@ print(summary)
 
 df = df[~((df["proba"] == 0) | (df["proba"] == 1))]
 # df = df[~((df["sub"] == 6) & (df["proba"] == 0.5))]
-# %%
-
 balance = df.groupby(["arrow", "sub", "proba"])["trial"].count().reset_index()
+print(balance)
+# %%
 for sub in balance["sub"].unique():
     sns.barplot(x="proba", y="trial", hue="arrow", data=balance[balance["sub"] == sub])
     plt.title(f"Subject {sub}")
@@ -1409,14 +1663,14 @@ aSPv = dd[dd.arrow == "up"]["aSPv"]
 proba = dd[dd.arrow == "up"]["proba"]
 
 # Spearman's rank correlation
-correlation, p_value = spearmanr(aSPv, proba)
+correlation, p_value = pearsonr(aSPv, proba)
 print(f"Spearman's correlation (up): {correlation}, p-value: {p_value}")
 # %%
 aSPv = dd[dd.arrow == "down"]["aSPv"]
 proba = dd[dd.arrow == "down"]["proba"]
 
 # Spearman's rank correlation
-correlation, p_value = spearmanr(aSPv, proba)
+correlation, p_value = pearsonr(aSPv, proba)
 print(f"Spearman's correlation (down): {correlation}, p-value: {p_value}")
 
 # %%
@@ -1428,6 +1682,7 @@ correlation, p_value = spearmanr(aSPv, arrow)
 print(f"Spearman's correlation(Proba 0.75): {correlation}, p-value: {p_value}")
 
 
+# %%
 for s in df["sub"].unique():
     sns.lmplot(
         data=df[(df["sub"] == s)],
@@ -1446,68 +1701,142 @@ for a in df["arrow"].unique():
     plt.show()
 
 # %% 
-# Create a list to store results
-slope_data = []
 
-# Loop through each unique color
-for c in df["arrow"].unique():
-    # Loop through each subject within this color
-    for s in df[df["arrow"] == c]["sub"].unique():
-        # Get data for this specific color and subject
-        subset = df[(df["arrow"] == c) & (df["sub"] == s)]
-
-        # Only calculate slope if we have enough data points
-        if len(subset) > 1:
-            # Calculate linear regression
-            slope, intercept, r_value, p_value, std_err = stats.linregress(
-                subset["proba"], subset["aSPv"]
-            )
-
-            # Store results
-            slope_data.append(
-                {
-                    "sub": s,
-                    "arrow": c,
-                    "slope": slope,
-                    "r_squared": r_value**2,
-                    "p_value": p_value,
-                }
-            )
-
-# Convert to DataFrame
-slope_df = pd.DataFrame(slope_data)
-
-# If you want to merge this with your original dataframe
-# First create a unique key for merging
-df["arrow_sub"] = df["arrow"] + "_" + df["sub"].astype(str)
-slope_df["arrow_sub"] = slope_df["arrow"] + "_" + slope_df["sub"].astype(str)
-print(slope_df)
+# checking the normality of the data
 # %%
-slopeD = slope_df[slope_df["arrow"] == "down"]["slope"]
-slopeU = slope_df[slope_df["arrow"] == "up"]["slope"]
-
-# Spearman's rank correlation
-correlation, p_value = spearmanr(slopeD, slopeU)
-print(
-    f"Spearman's correlation(Slope Down, Slope Up): {correlation}, p-value: {p_value}"
+stat, p = stats.kstest(
+    dd["aSPv"], "norm", args=(dd["aSPv"].mean(), dd["aSPv"].std(ddof=1))
 )
+print(f"Statistic: {stat}, p-value: {p}")
 # %%
-aSPvD = (
-    dd[(dd["arrow"] == "down") & (dd["proba"] == 0.75)]["aSPv"].values
-    - dd[(dd["arrow"] == "down") & (dd["proba"] == 0.25)]["aSPv"].values
+x = dd["aSPv"]
+ax = pg.qqplot(x, dist="norm")
+plt.show()
+
+
+# Set up the FacetGrid
+facet_grid = sns.FacetGrid(data=df, col="proba", col_wrap=3, height=8, aspect=1.5)
+
+facet_grid.add_legend()
+# Create pointplots for each sub
+facet_grid.map_dataframe(
+    sns.histplot,
+    x="aSPv",
+    hue="arrow",
+    hue_order=["down", "up"],
+    alpha=0.3,
 )
-aSPvU = (
-    dd[(dd["arrow"] == "Up") & (dd["proba"] == 0.75)]["aSPv"].values
-    - dd[(dd["arrow"] == "Up") & (dd["proba"] == 0.25)]["aSPv"].values
+# Set titles for each subplot
+for ax, p in zip(facet_grid.axes.flat, np.sort(df.proba.unique())):
+    ax.set_title(f"Horizontal aSPv: P(Right|up)=P(Left|down)={p}")
+    ax.legend(["up", "down"])
+# Adjust spacing between subplots
+facet_grid.figure.subplots_adjust(
+    wspace=0.2, hspace=0.2
+)  # Adjust wspace and hspace as needed
+
+# Show the plot
+plt.show()
+
+# s%%
+# %%
+fig = plt.figure()
+# Toggle full screen mode
+figManager = plt.get_current_fig_manager()
+figManager.full_screen_toggle()
+sns.pointplot(
+    data=df,
+    x="proba",
+    y="aSPv",
+    capsize=0.1,
+    n_boot=10000,
+    errorbar="ci",
+    hue="arrow",
+    hue_order=["down", "up"],
 )
+# _ = plt.title("Horizontal aSPv Across Probabilities", fontsize=30)
+plt.legend(title="Arrow", fontsize=20, title_fontsize=20)
+plt.xlabel(r"$\mathbb{P}$(Right|UP)=$\mathbb{P}$(Left|DOWN)", fontsize=30)
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
+plt.savefig(pathFig + "/asemAcrossProbapp.png",dpi=300, transparent=True)
+plt.show()
 # %%
-# Spearman's rank correlation
-correlation, p_value = spearmanr(slopeD, aSPvD)
-print(f"Spearman's correlation(Slope Green, aSPvG): {correlation}, p-value: {p_value}")
+sns.catplot(
+    data=dd,
+    x="proba",
+    y="aSPv",
+    hue="arrow",
+    hue_order=["down", "up"],
+    kind="violin",
+    split=True,
+    fill=False,
+    gap=0.1,
+    # inner="stick",
+    height=10,
+    cut=0,
+)
+# _ = plt.title("Horizontal aSPv Across Probabilities", fontsize=30)
+plt.legend(title="Arrow", fontsize=20, title_fontsize=20)
+plt.xlabel(r"$\mathbb{P}$(Right|UP)=$\mathbb{P}$(Left|DOWN)", fontsize=30)
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
+plt.tight_layout()
+plt.savefig(pathFig + "/asemAcrossprobaviolin.png",dpi=300, transparent=True)
+plt.show()
+
 # %%
-# Extract slope values for Green and Red colors
-green_slopes = slope_df[slope_df.arrow == "down"]["slope"]
-red_slopes = slope_df[slope_df.arrow == "up"]["slope"]
+model = smf.mixedlm(
+    "aSPv~proba*arrow",
+    data=df,
+    re_formula="~proba*arrow",
+    groups=df["sub"],
+).fit()
+model.summary()
+# %%
+downarrowsPalette = ["#0F68A9", "#A2D9FF"]
+uparrowsPalette = ["#FAAE7B", "#FFD699"]
+# %%
+# Extract fixed effects
+fe = model.fe_params
+base_slope = fe['proba']  # base slope (Down)
+interaction = fe['proba:arrow[T.up]']  # additional slope for Up
+
+# Extract random effects
+re_dict = model.random_effects
+
+# Create an empty dataframe for subject-specific slopes
+participant_slopes = []
+
+# Loop through each subject
+for sub, re in re_dict.items():
+    # The random effects order depends on the model specification
+    # Typically for re_formula="~proba*color"
+    # The order is [intercept, color, proba, proba:color]
+    
+    proba_re = re[2]  # Random effect for proba (green condition)
+    interaction_re = re[3]  # Random effect for proba:color interaction
+    
+    down_slope = base_slope + proba_re
+    up_slope = base_slope + interaction + proba_re + interaction_re
+    
+    participant_slopes.append({
+        'sub': sub,
+        'down_slope': down_slope,
+        'up_slope': up_slope,
+        'avg_abs_slope': (abs(down_slope) + abs(up_slope)) / 2
+    })
+
+# Convert to dataframe
+participant_slopes_df = pd.DataFrame(participant_slopes)
+print(participant_slopes_df)
+# %%
+# Extract slope values for up and down
+
+green_slopes = participant_slopes_df['down_slope'].values
+red_slopes =  participant_slopes_df['up_slope'].values
 
 # Create scatter plot
 plt.figure(figsize=(8, 8))  # Square figure for equal axes
@@ -1562,9 +1891,9 @@ plt.axhline(y=0, color="gray", linestyle="-", alpha=0.3)
 plt.axvline(x=0, color="gray", linestyle="-", alpha=0.3)
 
 # Add labels and title
-plt.xlabel("Down Slope")
-plt.ylabel("Up Slope")
-plt.title("Relationship Between Down and Up Condition Slopes")
+plt.xlabel("Adaptive Slope for Down")
+plt.ylabel("Adaptive Slope for Up")
+# plt.title("Relationship Between Green and Red Condition Slopes")
 plt.grid(True, alpha=0.3)
 plt.legend(loc="lower right")
 
@@ -1573,167 +1902,8 @@ plt.axis("equal")
 
 # Show plot
 plt.tight_layout()
-plt.savefig(pathFig + "/linearRegressionSlopes.png",dpi=300, transparent=True)
+plt.savefig(pathFig + "/linearRegressionSlopesFullProba.png",dpi=300, transparent=True)
 plt.show()
-# %%
-
-aSPv = dd[dd.proba == 0.25]["aSPv"]
-arrow = dd[dd.proba == 0.25]["arrow"]
-
-# Spearman's rank correlation
-correlation, p_value = spearmanr(aSPv, arrow)
-print(f"Spearman's correlation(Proba 0.25): {correlation}, p-value: {p_value}")
-
-
-# %%
-
-aSPv = dd[dd.proba == 0.5]["aSPv"]
-arrow = dd[dd.proba == 0.5]["arrow"]
-
-# Spearman's rank correlation
-correlation, p_value = spearmanr(aSPv, arrow)
-print(f"Spearman's correlation(Proba 0.5): {correlation}, p-value: {p_value}")
-
-
-# %%
-# cehcking the normality of the data
-print(pg.normality(dd[dd.proba == 0.5]["aSPv"]))
-# %%
-stat, p = stats.kstest(
-    dd["aSPv"], "norm", args=(dd["aSPv"].mean(), dd["aSPv"].std(ddof=1))
-)
-print(f"Statistic: {stat}, p-value: {p}")
-# %%
-x = dd["aSPv"]
-ax = pg.qqplot(x, dist="norm")
-plt.show()
-
-
-# Set up the FacetGrid
-facet_grid = sns.FacetGrid(data=df, col="proba", col_wrap=3, height=8, aspect=1.5)
-
-facet_grid.add_legend()
-# Create pointplots for each sub
-facet_grid.map_dataframe(
-    sns.histplot,
-    x="aSPv",
-    hue="arrow",
-    hue_order=["down", "up"],
-    alpha=0.3,
-)
-# Set titles for each subplot
-for ax, p in zip(facet_grid.axes.flat, np.sort(df.proba.unique())):
-    ax.set_title(f"Horizontal aSPv: P(Right|up)=P(Left|down)={p}")
-    ax.legend(["up", "down"])
-# Adjust spacing between subplots
-facet_grid.figure.subplots_adjust(
-    wspace=0.2, hspace=0.2
-)  # Adjust wspace and hspace as needed
-
-# Show the plot
-plt.show()
-# %%
-fig = plt.figure()
-# Toggle full screen mode
-figManager = plt.get_current_fig_manager()
-figManager.full_screen_toggle()
-sns.pointplot(
-    data=df,
-    x="proba",
-    y="aSPv",
-    n_boot=10000,
-    capsize=0.1,
-    errorbar="ci",
-    hue="arrow",
-    hue_order=["down", "up"],
-)
-# _ = plt.title("Horizontal aSPv Across Probabilities", fontsize=30)
-plt.legend(title="Arrow", fontsize=20, title_fontsize=20)
-plt.xlabel(r"$\mathbb{P}$(Right|UP)=$\mathbb{P}$(Left|DOWN)", fontsize=30)
-plt.xticks(fontsize=20)
-plt.yticks(fontsize=20)
-plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/asemAcrossProbapp.png",dpi=300, transparent=True)
-plt.show()
-# %%
-sns.catplot(
-    data=dd,
-    x="proba",
-    y="aSPv",
-    hue="arrow",
-    hue_order=["down", "up"],
-    kind="violin",
-    split=True,
-    fill=False,
-    gap=0.1,
-    # inner="stick",
-    height=10,
-    cut=0,
-)
-# _ = plt.title("Horizontal aSPv Across Probabilities", fontsize=30)
-plt.legend(title="Arrow", fontsize=20, title_fontsize=20)
-plt.xlabel(r"$\mathbb{P}$(Right|UP)=$\mathbb{P}$(Left|DOWN)", fontsize=30)
-plt.xticks(fontsize=20)
-plt.yticks(fontsize=20)
-plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
-plt.tight_layout()
-plt.savefig(pathFig + "/asemAcrossprobaviolinnfp.png",dpi=300, transparent=True)
-plt.show()
-
-# %%
-fig = plt.figure()
-# Toggle full screen mode
-figManager = plt.get_current_fig_manager()
-figManager.full_screen_toggle()
-sns.pointplot(
-    data=df[df.arrow == "up"],
-    x="proba",
-    y="aSPv",
-    capsize=0.1,
-    errorbar="ci",
-    hue="sub",
-    alpha=0.7,
-    palette="tab20",
-)
-_ = plt.title("Horizontal aSPv Per Subject: Arrow UP", fontsize=30)
-plt.legend(fontsize=20)
-plt.xlabel("P(Right|UP)", fontsize=30)
-plt.xticks(fontsize=20)
-plt.yticks(fontsize=20)
-plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsUP.png",dpi=300, transparent=True)
-plt.show()
-# %%
-fig = plt.figure()
-# Toggle full screen mode
-figManager = plt.get_current_fig_manager()
-figManager.full_screen_toggle()
-sns.pointplot(
-    data=df[df.arrow == "down"],
-    x="proba",
-    y="aSPv",
-    capsize=0.1,
-    errorbar="ci",
-    hue="sub",
-    alpha=0.7,
-    palette="tab20",
-)
-_ = plt.title("Horizontal aSPv Per Subject: Arrow DOWN", fontsize=30)
-plt.legend(fontsize=10)
-plt.xlabel("P(Left|DOWN)", fontsize=30)
-plt.xticks(fontsize=20)
-plt.yticks(fontsize=20)
-plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
-plt.savefig(pathFig + "/individualsDOWN.png",dpi=300, transparent=True)
-plt.show()
-# %%
-model = smf.mixedlm(
-    "aSPv~proba*arrow",
-    data=df,
-    re_formula="~proba*arrow",
-    groups=df["sub"],
-).fit(method=['lbfgs'])
-model.summary()
 # %%
 fe = model.fe_params
 intc = fe['Intercept']
@@ -1778,7 +1948,6 @@ ax.legend()
 plt.tight_layout()
 plt.show()
 
-
 # %%
 model = smf.mixedlm(
     "aSPv~C( arrow )",
@@ -1802,13 +1971,13 @@ model = smf.mixedlm(
     data=df[df.proba == 0.5],
     re_formula="~arrow",
     groups=df[df.proba == 0.5]["sub"],
-).fit()
+).fit(method=['lbfgs'])
 model.summary()
 
 
 # %%
 model = smf.mixedlm(
-    "aSPv~ C(proba,Treatment(0.5))",
+    "aSPv~ proba",
     data=df[df.arrow == "up"],
     re_formula="~proba",
     groups=df[df.arrow == "up"]["sub"],
@@ -1817,7 +1986,7 @@ model.summary()
 
 # %%
 model = smf.mixedlm(
-    "aSPv~ C(proba,Treatment(0.5))",
+    "aSPv~ proba",
     data=df[df.arrow == "down"],
     re_formula="~proba",
     groups=df[df.arrow == "down"]["sub"],
@@ -1826,8 +1995,6 @@ model.summary()
 
 
 # %%
-downarrowsPalette = ["#0F68A9", "#A2D9FF"]
-uparrowsPalette = ["#FAAE7B", "#FFD699"]
 dd = df.groupby(["sub", "arrow", "proba"])[["aSPv"]].mean().reset_index()
 # %%
 # fig = plt.figure()
@@ -1835,16 +2002,76 @@ dd = df.groupby(["sub", "arrow", "proba"])[["aSPv"]].mean().reset_index()
 # figManager = plt.get_current_fig_manager()
 # figManager.full_screen_toggle()
 g=sns.catplot(
-    data=df,
     x="proba",
     y="aSPv",
     hue="arrow",
-    kind='bar',
+    kind="bar",
     errorbar=("ci", 95),
     n_boot=1000,
     height=10,  # Set the height of the figure
     aspect=1.5,
-    alpha=0.8,
+    capsize=0.1,
+    hue_order=["down", "up"],
+    data=df,
+    fill=False,
+    legend=False,
+    palette=[downarrowsPalette[0], uparrowsPalette[0]],
+)
+sns.stripplot(
+    x="proba",
+    y="aSPv",
+    hue="arrow",
+    data=dd,
+    dodge=True,
+    palette=[downarrowsPalette[0], uparrowsPalette[0]],
+    jitter=True,
+    size=6,
+    linewidth=1,
+    # alpha=0.5,
+    # legend=False,
+)
+# plt.title("Horizontal aSPv Across 5 Probabilities", fontsize=30)
+plt.xlabel(r"$\mathbb{P}$(Right|Up)=$\mathbb{P}$(Left|Down)", fontsize=25)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=25)
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+legend_elements = [
+    Patch(facecolor=downarrowsPalette[0], alpha=1, label="Down"),
+    Patch(facecolor=uparrowsPalette[0], alpha=1, label="Up"),
+]
+g.ax.legend(
+    handles=legend_elements, fontsize=20, title="Arrow", title_fontsize=20
+)
+plt.tight_layout()
+plt.savefig(pathFig + "/aSPvarrowsFullProba.png",dpi=300, transparent=True)
+plt.show()
+# %%
+# %%
+def statistic(x, y,axis):
+
+    return np.mean(x,axis=axis) - np.mean(y,axis=axis)
+# %%
+# ddd=dd[~( dd['sub']==6 )]
+x=dd[( dd['arrow']=='up' )& (dd['proba']==0.25)]['aSPv'].values
+y=dd[( dd['arrow']=='up' )& ( dd['proba']==0.75 )]['aSPv'].values
+statistic(x,y,0)
+# %%
+res = permutation_test(data=(x, y), statistic=statistic,permutation_type='samples', vectorized=True,n_resamples=2**(len(x)),)
+print(res.statistic)
+# %%
+print(res.pvalue)
+# %%
+g=sns.catplot(
+    data=dd,
+    x="proba",
+    y="aSPv",
+    hue="arrow",
+    kind="bar",
+    errorbar='se',
+    # errorbar='se',
+    n_boot=1000,
+    height=10,  # Set the height of the figure
+    aspect=1.5,
     capsize=0.1,
     hue_order=["down", "up"],
     fill=False,
@@ -1861,26 +2088,108 @@ sns.stripplot(
     jitter=True,
     size=6,
     linewidth=1,
-    legend=False,
     # alpha=0.5,
+    # legend=False,
 )
+order=[0.25,0.5,0.75]
+hue_order=["down", "up"]
+pairs = [
+    ((0.25, "down"), (0.25, "up")),
+    ((0.5, "down"), (0.5, "up")),
+    ((0.75, "down"), (0.75, "up")),
+    # ((0.25, "Down"), (0.5, "Down")),
+    # ((0.75, "Down"), (0.5, "Down")),
+    # ((0.25, "Up"), (0.5, "Up")),
+    # ((0.75, "Up"), (0.5, "Up"))
+
+
+]
+annotator = Annotator(g.ax, pairs, data=dd, x='proba', y="aSPv", hue="arrow",hue_order=hue_order, order=order)
+annotator.configure(test='t-test_paired', text_format='star', loc='outside',fontsize=20)
+annotator.apply_and_annotate()
+# plt.title("Horizontal aSPv Across 5 Probabilities", fontsize=30)
+plt.xlabel(r"$\mathbb{P}$(Right|Up)=$\mathbb{P}$(Left|Down)", fontsize=25)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=25)
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
 legend_elements = [
-    Patch(facecolor=downarrowsPalette[0], alpha=1, label="Down"),
-    Patch(facecolor=uparrowsPalette[0], alpha=1, label="Up"),
+    Patch(facecolor=downarrowsPalette[0], alpha=1, label="down"),
+    Patch(facecolor=uparrowsPalette[0], alpha=1, label="up"),
 ]
 g.ax.legend(
     handles=legend_elements, fontsize=20, title="Arrow", title_fontsize=20
 )
-# plt.title("Horizontal aSPv Across 5 Probabilities", fontsize=30)
-plt.xlabel(r"$\mathbb{P}$(Right|Up)=$\mathbb{P}$(Left|Down)", fontsize=30)
-plt.ylabel("Horizontal aSPv (deg/s)", fontsize=30)
-plt.xticks(fontsize=25)
-plt.yticks(fontsize=25)
 plt.tight_layout()
 plt.savefig(pathFig + "/aSPvarrows.png",dpi=300, transparent=True)
 plt.show()
 # %%
-dd[dd['proba']==0.5]
+dd[dd.proba==0.25]
+# %%
+hue_order=[0.25,0.5,0.75]
+order=["down", "up"]
+g=sns.catplot(
+    data=df,
+    x="arrow",
+    y="aSPv",
+    hue="proba",
+    kind="bar",
+    errorbar=("ci", 95),
+    # errorbar='se',
+    n_boot=10000,
+    height=10,  # Set the height of the figure
+    aspect=1.5,
+    capsize=0.1,
+    hue_order=hue_order,
+    fill=False,
+    legend=False,
+    palette='viridis',
+)
+
+sns.stripplot(
+    x="arrow",
+    y="aSPv",
+    hue="proba",
+    data=dd,
+    dodge=True,
+    palette='viridis',
+    jitter=True,
+    size=6,
+    linewidth=1,
+    # alpha=0.5,
+    # legend=False,
+)
+pairs = [
+    (("down",0.25), ('down',0.50)),
+    (("down",0.75), ('down',0.50)),
+    (("down",0.25), ('down',0.75)),
+
+    (("up",0.25), ('up',0.50)),
+    (("up",0.75), ('up',0.50)),
+    (("up",0.25), ('up',0.75)),
+]
+annotator = Annotator(g.ax, pairs, data=dd, x='arrow', y="aSPv", hue="proba",hue_order=hue_order, order=order)
+annotator.configure(test='t-test_paired',  loc='outside',fontsize=20,comparisons_correction='HB')
+annotator.apply_and_annotate()
+# plt.title("Horizontal aSPv Across 5 Probabilities", fontsize=30)
+plt.xlabel(r"Cue", fontsize=25)
+plt.ylabel("Horizontal aSPv (deg/s)", fontsize=25)
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+
+viridis_colors = plt.cm.viridis([0, 0.5, 1])  # Maps to your 0.25, 0.50, 0.75 proba values
+
+legend_elements = [
+    Patch(facecolor=viridis_colors[0], edgecolor='black', label='0.25'),
+    Patch(facecolor=viridis_colors[1], edgecolor='black', label='0.50'),
+    Patch(facecolor=viridis_colors[2], edgecolor='black', label='0.75')
+]
+g.ax.legend(
+    handles=legend_elements, fontsize=20, title=r"$\mathbb{P}$(Right|Up)=$\mathbb{P}$(Left|Down)", title_fontsize=20
+)
+plt.tight_layout()
+plt.savefig(pathFig + "/aSPvarrowsbis.png",dpi=300, transparent=True)
+plt.show()
+
 # %%
 df_prime = df[
     [
@@ -1952,6 +2261,16 @@ sns.stripplot(
     legend=False,
 )
 
+order=[0.25,0.5,0.75]
+hue_order=["left", "right"]
+pairs = [
+    ((0.25, "left"), (0.25, "right")),
+    ((0.5, "left"), (0.5, "right")),
+    ((0.75, "left"), (0.75, "right")),
+]
+annotator = Annotator(g.ax, pairs, data=dd[dd.arrow == "down"], x='proba', y="aSPv", hue="TD_prev",hue_order=hue_order, order=order)
+annotator.configure(test='t-test_paired', text_format='star', loc='outside',fontsize=20)
+annotator.apply_and_annotate()
 
 # Create custom legend
 
@@ -2014,6 +2333,18 @@ sns.stripplot(
     legend=False,
 )
 
+order=[0.25,0.5,0.75]
+hue_order=["left", "right"]
+pairs = [
+    ((0.25, "left"), (0.25, "right")),
+    ((0.5, "left"), (0.5, "right")),
+    ((0.75, "left"), (0.75, "right")),
+
+]
+annotator = Annotator(g.ax, pairs, data=dd[dd.arrow == "up"], x='proba', y="aSPv", hue="TD_prev",hue_order=hue_order, order=order)
+annotator.configure(test='t-test_paired', text_format='star', loc='outside',fontsize=20)
+annotator.apply_and_annotate()
+
 
 # Create custom legend
 
@@ -2027,7 +2358,7 @@ g.ax.legend(
 
 # Customize the plot
 # g.ax.set_title("Anticipatory Velocity Given Previous TD: arrow Up", fontsize=30)
-g.ax.set_xlabel(r"$\mathbb{P}$(Right|UP)", fontsize=25)
+g.ax.set_xlabel(r"$\mathbb{P}$(Right|Up)", fontsize=25)
 g.ax.set_ylabel("Horizontal aSPv (deg/s)", fontsize=25)
 g.ax.tick_params(labelsize=25)
 # g.ax.set_ylim(-1, 1)
@@ -2035,6 +2366,83 @@ g.ax.tick_params(labelsize=25)
 plt.tight_layout()
 plt.savefig(pathFig + "/aSPvupTD.png",dpi=300, transparent=True)
 plt.show()
+# %%
+pivot_df = dd.pivot_table(
+    index=['sub', 'proba', 'arrow'],
+    columns='TD_prev',
+    values='aSPv'
+)
+
+# Step 2: Calculate the difference (right - left)
+pivot_df['Diff'] = pivot_df['right'] - pivot_df['left']
+
+# Step 3: Reset index to get back to a regular dataframe format
+result_df = pivot_df.reset_index()
+
+# Display the result
+print(result_df)
+# %%
+# Create the plot using catplot
+g = sns.catplot(
+    data=result_df,
+    x="proba",
+    y="Diff",
+    hue="arrow",
+    kind="bar",
+    errorbar='se',
+    n_boot=1000,
+    palette=[downarrowsPalette[0],uparrowsPalette[0]],  # Same color for both
+    height=10,  # Set the height of the figure
+    aspect=1.5,
+    alpha=0.8,
+    capsize=0.1,
+    hue_order=["down", "up"],
+    legend=False,
+    fill=False,
+)
+
+# # Add hatching to the right bars
+# for i, bar in enumerate(g.ax.patches[len(g.ax.patches) // 2 :]):  # Second half of bars
+#     bar.set_facecolor("none")  # Make bar empty
+#     bar.set_hatch("///")  # Add diagonal lines
+#     bar.set_edgecolor(uparrowsPalette[0])  # Set edge color
+
+sns.stripplot(
+    data=result_df,
+    x="proba",
+    y="Diff",
+    hue="arrow",
+    hue_order=["down", "up"],
+    palette=[downarrowsPalette[0],uparrowsPalette[0]],  # Same color for both
+    dodge=True,
+    jitter=True,
+    linewidth=1,
+    size=6,
+    legend=False,
+)
+
+# Create custom legend
+
+legend_elements = [
+    Patch(facecolor=downarrowsPalette[0], alpha=1, label="Down"),
+    Patch(facecolor=uparrowsPalette[0], alpha=1, label="Up"),
+]
+g.ax.legend(
+    handles=legend_elements, fontsize=20, title="arrow", title_fontsize=20
+)
+plt.tight_layout()
+
+# Customize the plot
+# g.ax.set_title("Anticipatory Velocity Given Previous TD: arrow Up", fontsize=30)
+g.ax.set_xlabel(r"$\mathbb{P}$(Right|Up)", fontsize=25)
+g.ax.set_ylabel(" aSPv Diff (Previous TD: Right - Left ) (deg/s)", fontsize=20)
+g.ax.tick_params(labelsize=25)
+# g.ax.set_ylim(-1, 1)
+
+plt.tight_layout()
+plt.savefig(pathFig + "/aSPvTDiff.png",dpi=300, transparent=True)
+plt.show()
+
 # %%
 df["interaction"] = list(zip(df["TD_prev"], df["arrow_prev"]))
 df_prime = df[
@@ -2063,9 +2471,239 @@ df_prime.groupby(["proba", "interaction", "arrow"]).count()[["aSPv"]]
 # %%
 print(learningCurveInteraction)
 # %%
-learningCurveInteraction[
-    learningCurveInteraction["aSPv"] == learningCurveInteraction["aSPv"].max()
+pivot_df = learningCurveInteraction.pivot_table(
+    index=['sub', 'proba', 'arrow'],
+    columns='interaction',
+    values='aSPv'
+)
+
+# Step 2: Calculate the difference (right - left)
+pivot_df['DiffDown'] = pivot_df[('right','down')] - pivot_df[('left','down')]
+pivot_df['DiffUp'] = pivot_df[('right','up')] - pivot_df[('left','up')]
+
+# Step 3: Reset index to get back to a regular dataframe format
+result_df = pivot_df.reset_index()
+
+# Display the result
+print(result_df)
+
+# %% 
+
+result_df.dropna(inplace=True)
+# %%
+
+
+def perm_test(x, y, n_perms=1000, stat=np.nanmean):
+    diff = np.abs(stat(x)-stat(y))
+    pooled = np.concatenate([x, y])
+    count = 0
+    for n in range(n_perms):
+        rng = np.random.default_rng(n)
+        rng.shuffle(pooled)
+        x_perm = pooled[:len(x)]
+        y_perm = pooled[len(x):]
+        diff_perm = np.abs(stat(x_perm)-stat(y_perm))
+        if diff_perm >= diff:
+            count += 1
+
+    pv = count / n_perms
+    return pv
+# %%
+perm_test(result_df[result_df['arrow']=='up']['DiffUp'].values,result_df[result_df['arrow']=='up']['DiffDown'].values)
+# %%
+perm_test(result_df[result_df['arrow']=='down']['DiffUp'].values,result_df[result_df['arrow']=='down']['DiffDown'].values)
+# %%
+perm_test(result_df[result_df['arrow']=='up']['DiffUp'].values,result_df[result_df['arrow']=='down']['DiffDown'].values)
+# %%
+perm_test(result_df[result_df['arrow']=='up']['DiffDown'].values,result_df[result_df['arrow']=='down']['DiffUp'].values)
+# %%
+melted_df = pd.melt(
+    result_df,
+    id_vars=["sub", "proba", "arrow"],
+    value_vars=["DiffDown", "DiffUp"],
+    var_name="DiffType",
+    value_name="Diff"
+)
+
+
+print(melted_df)
+# Set up the figure
+# %%
+# Create grouped bar plot
+g = sns.catplot(
+    data=melted_df,
+    x="proba",
+    y="Diff",
+    hue="arrow",
+    col="DiffType",  # Split by DiffType
+    kind="bar",
+    errorbar='ci',
+    n_boot=1000,
+    palette=[downarrowsPalette[0], uparrowsPalette[0]],
+    height=8,
+    aspect=1.2,
+    alpha=0.8,
+    capsize=0.1,
+    hue_order=["down", "up"],
+    fill=False,
+    legend=False,
+)
+
+# Add individual data points as strips
+for ax in g.axes.flat:
+    diff_type = ax.get_title().split(" ")[-1]  # Get the DiffType from title
+    sns.stripplot(
+        data=melted_df[melted_df["DiffType"] == diff_type],
+        x="proba",
+        y="Diff",
+        hue="arrow",
+        hue_order=["down", "up"],
+        palette=[downarrowsPalette[0], uparrowsPalette[0]],
+        dodge=True,
+        jitter=True,
+        linewidth=1,
+        size=6,
+        legend=False,
+        ax=ax
+    )
+
+# Create custom legend
+legend_elements = [
+    Patch(facecolor=downarrowsPalette[0], alpha=1, label="Down"),
+    Patch(facecolor=uparrowsPalette[0], alpha=1, label="Up"),
 ]
+
+# Add legend to the figure
+plt.legend(
+    handles=legend_elements,
+    fontsize=15,
+    title="arrow",
+    title_fontsize=15,
+    # loc='upper center',
+    # bbox_to_anchor=(0.5, 1.05),
+    # ncol=2
+)
+
+# Customize the plot titles and labels
+g.set_titles("{col_name}")
+g.set_axis_labels(r"$\mathbb{P}$(Right|Up)", "aSPv Diff (Previous TD: Right - Left) (deg/s)")
+g.set_xticklabels(fontsize=20)
+g.set_yticklabels(fontsize=20)
+
+# Customize labels and ticks
+for ax in g.axes.flat:
+    ax.set_xlabel(r"$\mathbb{P}_{Up}$(Right)", fontsize=25)
+    ax.set_ylabel("aSPv Diff (Previous Trial: (Cue,Right) - (Cue,Left)) (deg/s)", fontsize=15)
+    ax.tick_params(labelsize=20)
+    
+    # Add statistical annotations if needed
+    order = [0.25, 0.5, 0.75]
+    hue_order = ["down", "up"]
+    pairs = [
+        ((0.25, "down"), (0.25, "up")),
+        ((0.5, "down"), (0.5, "up")),
+        ((0.75, "down"), (0.75, "up")),
+    ]
+    
+    # Add statistical annotations
+    diff_type = ax.get_title().split(" ")[-1]
+    subset_df = melted_df[melted_df["DiffType"] == diff_type]
+
+g.set_titles("")
+plt.tight_layout()
+plt.savefig("aSPvTDiff_combined.png", dpi=300, transparent=True)
+plt.show()
+# %%
+
+# Create a combined plot where one type uses hatching
+g = sns.catplot(
+    data=melted_df,
+    x="proba",
+    y="Diff",
+    hue="arrow",
+    col="DiffType",
+    kind="bar",
+    errorbar='ci',
+    n_boot=1000,
+    palette=[downarrowsPalette[0], uparrowsPalette[0]],
+    height=8,
+    aspect=1.,
+    alpha=0.8,
+    capsize=0.1,
+    hue_order=["down", "up"],
+    legend=False,
+    fill=False,
+)
+
+# Apply different patterns to distinguish between DiffDown and DiffUp
+for i, ax in enumerate(g.axes.flat):
+    bars = ax.patches
+    diff_type = ax.get_title().split(" ")[-1]
+    
+    # Apply hatching to one of the diff types
+    if diff_type == "DiffUp":
+        for bar in bars:
+            bar.set_hatch("///")
+            
+    # Add individual data points
+    sns.stripplot(
+        data=melted_df[melted_df["DiffType"] == diff_type],
+        x="proba",
+        y="Diff",
+        hue="arrow",
+        hue_order=["down", "up"],
+        palette=[downarrowsPalette[0], uparrowsPalette[0]],
+        dodge=True,
+        jitter=True,
+        linewidth=1,
+        size=6,
+        legend=False,
+        ax=ax
+    )
+
+# Create custom legend with both arrow and DiffType
+legend_elements = [
+    Patch(facecolor=downarrowsPalette[0], alpha=1, label="Down"),
+    Patch(facecolor=uparrowsPalette[0], alpha=1, label="Up"),
+    Patch(facecolor='gray', hatch="///", alpha=0.6, label="DiffUp"),
+    Patch(facecolor='gray', alpha=0.6, label="DiffDown"),
+]
+
+# Add legend to the figure
+g.figure.legend(
+    handles=legend_elements,
+    fontsize=15,
+    title="Types",
+    title_fontsize=15,
+    loc='upper center',
+    bbox_to_anchor=(0.88, .97),
+    ncol=2
+)
+
+# Customize the plot titles and labels
+g.set_titles("{col_name}")
+g.set_axis_labels(r"$\mathbb{P}_{Up}$(Right)", "aSPv Diff (Previous TD: Right - Left) (deg/s)")
+
+# Customize labels and ticks
+for ax in g.axes.flat:
+    ax.set_xlabel(r"$\mathbb{P}_{Up}$(Right)", fontsize=25)
+    ax.set_ylabel("aSPv Diff (Previous Trial: (Cue,Right) - (Cue,Left)) (deg/s)", fontsize=15)
+    ax.tick_params(labelsize=20)
+    
+    # Add statistical annotations if needed
+    order = [0.25, 0.5, 0.75]
+    hue_order = ["Down", "Up"]
+    pairs = [
+        ((0.25, "Down"), (0.25, "Up")),
+        ((0.5, "Down"), (0.5, "Up")),
+        ((0.75, "Down"), (0.75, "Up")),
+    ]
+    
+
+g.set_titles("")
+plt.tight_layout()
+plt.savefig("aSPvTDiff_patterned.png", dpi=300, transparent=True)
+plt.show()
 # %%
 df["interaction"].unique()
 # %%
@@ -2075,7 +2713,7 @@ hue_order = [
     ("right", "down"),
     ("right", "up"),
 ]
-colorsPalettes = ["#0F68A9", "#FAAE7B", "#0F68A9", "#FAAE7B"]
+colorsPalettes = ["#0F68A9", "#FAAE7B","#0F68A9", "#FAAE7B"]
 # %%
 # Create the base plot
 g = sns.catplot(
@@ -2107,6 +2745,7 @@ for i, bar in enumerate(g.ax.patches):
         bar.set_facecolor("none")  # Make bar empty
         bar.set_hatch("///")  # Add diagonal lines
         bar.set_edgecolor(colorsPalettes[i // n_x_values])
+
 
 # Add stripplot
 sns.stripplot(
@@ -2154,9 +2793,8 @@ g.ax.set_title("Up Trials:\n Previous TD and its Arrow", fontsize=30)
 g.ax.set_ylabel("Horizontal aSPv (deg/s)", fontsize=30)
 g.ax.set_xlabel(r"$\mathbb{P}$(Right|Up)", fontsize=30)
 g.ax.tick_params(labelsize=25)
-
-plt.tight_layout()
-plt.savefig(pathFig + "/aSPvUpInteraction.png",dpi=300, transparent=True)
+# plt.tight_layout()
+plt.savefig(pathFig + "/aSPvUpInteraction.png",dpi=300, transparent=True,bbox_inches='tight')
 plt.show()
 
 # %%
@@ -2250,7 +2888,7 @@ model = smf.mixedlm(
     data=df[df.proba == 0.25],
     re_formula="~arrow*TD_prev",
     groups=df[df.proba == 0.25]["sub"],
-).fit(method="lbfgs")
+).fit(method=['lbfgs'])
 model.summary()
 # %%
 model = smf.mixedlm(
@@ -2258,13 +2896,13 @@ model = smf.mixedlm(
     data=df[df.proba == 0.75],
     re_formula="~arrow*TD_prev",
     groups=df[df.proba == 0.75]["sub"],
-).fit(method="lbfgs")
+).fit(method=[ "lbfgs" ])
 model.summary()
 # %%
 model = smf.mixedlm(
     "aSPv~  C(arrow)*C(TD_prev)",
     data=df[df.proba == 0.5],
-    re_formula="~TD_prev",
+    re_formula="~arrow*TD_prev",
     groups=df[df.proba == 0.5]["sub"],
 ).fit(method="lbfgs")
 model.summary()
@@ -2484,106 +3122,3 @@ subject_classification = classify_subject_behavior(conditional_probabilities)
 summary = subject_classification.groupby("behavior_class").size()
 print("\nBehavior Classification Summary:")
 print(summary)
-# %%
-# Create the plot with connected dots for each participant
-plt.figure(figsize=(8, 6))
-sns.scatterplot(
-    data=pivot_table,
-    x="up",
-    y="down",
-    hue="proba",
-    palette="viridis",
-    style="proba",
-    markers=["o", "s", "D", "^", "v"],
-    s=50,
-)
-# Connect dots for each participant
-for sub in pivot_table["sub"].unique():
-    subset = pivot_table[pivot_table["sub"] == sub]
-    plt.plot(subset["up"], subset["down"], color="gray", alpha=0.5, linestyle="--")
-# Add plot formatting
-plt.axhline(0, color="black", linestyle="--")
-plt.axvline(0, color="black", linestyle="--")
-plt.title("Participants adaptaion across probabilites")
-plt.xlabel("up")
-plt.ylabel("down")
-plt.ylim(-2.5, 2.5)
-plt.xlim(-2.5, 2.5)
-plt.legend(title="proba")
-plt.tight_layout()
-plt.show()
-plt.show()
-# %%
-# Connect dots for each participant
-for sub in pivot_table["sub"].unique():
-    subset = pivot_table[pivot_table["sub"] == sub]
-    plt.plot(subset["up"], subset["down"], color="gray", alpha=0.5, linestyle="--")
-    sns.scatterplot(
-        data=pivot_table[pivot_table["sub"] == sub],
-        x="up",
-        y="down",
-        hue="proba",
-        palette="viridis",
-        style="proba",
-        markers=["o", "s", "D"],
-    )
-    # Add plot formatting
-    plt.axhline(0, color="black", linestyle="--")
-    plt.axvline(0, color="black", linestyle="--")
-    plt.title(f"Participant:{sub}")
-    plt.xlabel("up")
-    plt.ylabel("down")
-    plt.legend(title="proba")
-    plt.tight_layout()
-    plt.show()
-# %%
-# Group by 'sub', 'proba', and 'color' and calculate the mean of 'aSPv'
-mean_velo = df.groupby(["sub", "proba", "interaction"])["aSPv"].mean().reset_index()
-print(mean_velo)
-mean_velo["interaction"] = mean_velo["interaction"].astype("str")
-# %%
-# Pivot the table to have 'proba' as columns
-pivot_table = mean_velo.pivot_table(
-    index=["sub", "proba"], columns="interaction", values="aSPv"
-).reset_index()
-
-# Calculate the adaptation
-# pivot_table["adaptation"] = (
-#     np.abs(pivot_table["green"]) + np.abs(pivot_table["red"])
-# ) / 2
-
-print(pivot_table)
-pivot_table = pd.DataFrame(pivot_table)
-pivot_table.columns
-# %%
-pivot_table.columns[2]
-# %%
-# pivot_table.rename(
-#     columns={
-#         ('left', 'green'): "left_green",
-#         ('left', 'red'): "left_red",
-#         ('right', 'green'): "right_green",
-#         ('right', 'red'): "right_red",
-#     },
-#     inplace=True,
-# )
-#
-# pivot_table.columns
-# %%
-sns.scatterplot(
-    data=pivot_table, x="('right', 'up')", y="('right', 'down')", hue="proba"
-)
-# Or alternatively
-plt.axhline(y=0, color="k", linestyle="--")  # Horizontal line at y=0
-plt.axvline(x=0, color="k", linestyle="--")  # Vertical line at x=0
-plt.xlim(-2.5, 2.5)
-plt.ylim(-2.5, 2.5)
-plt.show()
-# a %%
-sns.pointplot(
-    data=pivot_table,
-    x="proba",
-    y="adaptation",
-)
-plt.show()
-# %%
